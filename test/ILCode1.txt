@@ -1,0 +1,19 @@
+call @&mytest.LAMBDA_1
+halt
+@&mytest.LAMBDA_1
+push 3
+store mytest.LAMBDA_1.a
+push @&mytest.LAMBDA_4
+store mytest.LAMBDA_1.f
+push 2
+push 3
+call mytest.LAMBDA_1.f
+store mytest.LAMBDA_1.d
+return
+@&mytest.LAMBDA_4
+store mytest.LAMBDA_4.b
+store mytest.LAMBDA_4.a
+load mytest.LAMBDA_4.a
+load mytest.LAMBDA_4.b
+add
+return
