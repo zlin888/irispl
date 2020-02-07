@@ -34,3 +34,6 @@
 # Vscode
 .vscode
 bin
+
+# JetBrain
+/cmake-build-debug/
