@@ -37,3 +37,4 @@ bin
 
 # JetBrain
 /cmake-build-debug/
+/.idea
