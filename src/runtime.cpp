@@ -6,20 +6,14 @@
 #include <queue>
 #include <string>
 #include <iostream>
+
 using namespace std;
 
-
 int main() {
-    PID a = 12;
-    cout << "hello";
+    Runtime runtime;
+    Process process0 = runtime.createProcess();
+    runtime.addProcess(process0);
+    runtime.execute(process0);
+    cout << "hi";
     return 0;
 };
-
-void Runtime::setPID(int number){
-    m_PID += number;
-    return;
-};
-
-void Runtime::execute(Process process) {
-    Instruction instruction = process.currentInstruction();
-}

@@ -1,21 +1,54 @@
 #ifndef RUNTIME_HPP
 #define RUNTIME_HPP
 
-#include <string>
 #include "process.hpp"
 
-typedef int PID;
+#include <string>
+#include <map>
+#include <queue>
+
+using namespace std;
 
 class Runtime{
     public:
-        void setPID(int number);
+        map<PID, Process> processPool;
+        queue<Process> processQueue;
+
+        void start();
         void execute(Process process);
-        enum ProcessState {
-            READY, RUNNING, SLEEPING, SUSPENDED, STOPPED
-        };
-    private:
-        PID m_PID;
-        PID m_parentPID;
+        int addProcess(Process process);
+        Process createProcess();
+        PID allocatePID();
 };
+
+
+//=================================================================
+//                      PROCESS RELATED
+//=================================================================
+int Runtime::addProcess(Process process) {
+    if(!processPool.count(process.pid)){
+        //process not in pool 
+        processPool.emplace(process.pid, process);
+    }
+    processQueue.push(process);
+    return process.pid;
+};
+
+Process Runtime::createProcess() {
+    Process process(this->allocatePID());
+    return process;
+}
+
+PID Runtime::allocatePID(){
+    return processPool.size();
+}
+
+void Runtime::execute(Process process) {
+    Instruction instruction = process.currentInstruction();
+    if(instruction.type == "COMMENT" || instruction.type == "LABEL") {
+    }
+    else {
+    }
+}
 
 #endif // !RUNTIME_HPP
