@@ -21,6 +21,7 @@ class Runtime{
     Process createProcess(ModuleLoader moduleLoader);
     PID allocatePID();
 
+    void ailStore(Process &process);
 };
 
 
@@ -46,21 +47,6 @@ PID Runtime::allocatePID(){
     return processPool.size();
 }
 
-void Runtime::execute(Process& process) {
-
-    Instruction instruction = process.currentInstruction();
-    if (instruction.type == COMMENT || instruction.type == LABEL) {
-        process.step();
-    } else {
-
-
-
-    }
-
-    if (process.PC >= process.instructions.size()){
-        process.state = STOPPED;
-    }
-}
 
 
 //=================================================================
@@ -94,5 +80,29 @@ void Runtime::schedule() {
 
     }
 }
+
+void Runtime::execute(Process& process) {
+
+    Instruction instruction = process.currentInstruction();
+    if (instruction.type != COMMENT && instruction.type != LABEL) {
+        string argument = instruction.argument;
+        string mnemonic = instruction.mnemonic;
+
+        if (mnemonic == "store") {
+            this->ailStore(process);
+        }
+
+    }
+    process.step();
+
+    if (process.PC >= process.instructions.size()){
+        process.state = STOPPED;
+    }
+}
+
+void Runtime::ailStore(Process &process) {
+
+}
+
 
 #endif // !RUNTIME_HPP
