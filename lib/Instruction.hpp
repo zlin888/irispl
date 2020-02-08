@@ -15,11 +15,14 @@ using namespace std;
 class Instruction{
 public:
     InstructionType type;
-    string argType{};
+    string argumentType{};
     string instruction{};
     string mnemonic{};
     string argument{};
     explicit Instruction(string instString);
+
+private:
+    string getArgumentType();
 };
 
 
@@ -35,10 +38,26 @@ Instruction::Instruction(string instString){
     } else {
         this->type = INSTRUCTION;
         this->instruction = instString;
+
+        //Split instruction string by whitespace, the first split is mnemonic and the last is argument
+        string delimiter = " ";
+        int splitIndex = instString.find(delimiter);
+
+        this->mnemonic = instString.substr(0, splitIndex);
+        if(splitIndex != -1) {
+            this->argument = instString.substr(splitIndex, instString.size());
+        }
+
+        this->argumentType = this->getArgumentType();
 //        string fields = instString.split(/\s+/i);
 //        this->mnemonic = fields[0].toLowerCase();
 //        this->argument = fields[1];
     }
+}
+
+string Instruction::getArgumentType() {
+    return std::string();
 };
+
 
 #endif //TYPED_SCHEME_INSTRUCTION_HPP
