@@ -6,9 +6,11 @@
 #include <vector>
 #include <map>
 #include <stdexcept>
+#include <memory>
 #include "Instruction.hpp"
 #include "Utils.hpp"
 #include "ModuleLoader.hpp"
+#include "schemeObject.hpp"
 
 using namespace std;
 
@@ -19,37 +21,21 @@ enum ProcessState {
     READY, RUNNING, SLEEPING, SUSPENDED, STOPPED
 };
 
-// Used as Memory
+const Handle TOP_NODE_HANDLE = "&TOP_NODE";
+
 class Heap {
 public:
-    map<Handle, Closure> dataMap;
+    map<Handle, std::shared_ptr<SchemeObject>> dataMap;
     int handleCounter;
 
     bool hasHandle(Handle handle);
 
-    closure get(Handle handle);
+    shared_ptr<SchemeObject> get(Handle handle);
+
+    void set(Handle handle, shared_ptr<SchemeObject> schemeObjectPtr);
 };
 
-class Closure {
-public:
 
-    int instructionAddress{};
-    map<string, string> boundVariables;
-    map<string, string> freeVariables;
-    map<string, bool> dirtyFlags;
-    Closure *parentClosure;
-
-    Closure(int instructionAddress, Closure *parentClosure) : instructionAddress(instructionAddress),
-                                                              parentClosure(parentClosure) {}
-
-    void setBoundVariable(const string &variable, const string &value, bool dirtyFlag);
-
-    string getBoundVariable(const string &variable);
-
-    void setFreeVariable(const string &variable, const string &value, bool dirtyFlag);
-
-    string getFreeVariable(const string &variable);
-};
 
 class StackFrame {
 public:
@@ -65,10 +51,10 @@ public:
     vector<StackFrame> fStack;
     vector<Instruction> instructions;
     ProcessState state = READY;
+    Heap heap;
     PID pid = 0;
     int PC = 0;
-
-    Process() {};
+    std::shared_ptr<Closure> currentClosurePtr;
 
     Process(PID newPid, const ModuleLoader &moduleLoader);
 
@@ -102,6 +88,8 @@ Process::Process(PID newPid, const ModuleLoader &moduleLoader) {
     for (auto &i : moduleLoader.ILCode) {
         this->instructions.emplace_back(Instruction(i));
     }
+    this->currentClosurePtr = std::shared_ptr<Closure>(new Closure(-1, nullptr));
+    this->heap.set(TOP_NODE_HANDLE, this->currentClosurePtr);
 };
 
 void Process::pushOperand(const string &value) {
@@ -124,35 +112,15 @@ StackFrame Process::popStackFrame() {
     return sf;
 }
 
+void Process::pushCurrentClosure(int returnAddress) {
+    StackFrame sf(closure, returnAddress);
+    this->fStack.push_back(sf);
+}
+
 string Process::dereference(const string &variableName) {
 
 }
 
-
-
-
-
-//=================================================================
-//                    Closure's Closure
-//=================================================================
-
-void Closure::setBoundVariable(const string &variable, const string &value, bool dirtyFlag) {
-    this->boundVariables[variable] = value;
-    this->dirtyFlags[variable] = dirtyFlag;
-}
-
-string Closure::getBoundVariable(const string &variable) {
-    return this->boundVariables[variable];
-}
-
-void Closure::setFreeVariable(const string &variable, const string &value, bool dirtyFlag) {
-    this->freeVariables[variable] = value;
-    this->dirtyFlags[variable] = dirtyFlag;
-}
-
-string Closure::getFreeVariable(const string &variable) {
-    return this->freeVariables[variable];
-}
 
 //=================================================================
 //                           Heap
@@ -162,12 +130,16 @@ bool Heap::hasHandle(Handle handle) {
     return this->dataMap.count(handle);
 }
 
-closure Heap::get(Handle handle) {
+std::shared_ptr<SchemeObject> Heap::get(Handle handle) {
     if (this->hasHandle(std::move(handle))) {
         return this->dataMap[handle];
     } else {
         throw std::out_of_range("[ERROR] handle holds nothing -- Heap::get");
     }
+}
+
+void Heap::set(Handle handle, std::shared_ptr<SchemeObject> schemeObjectPtr) {
+    this->dataMap[handle] = schemeObjectPtr;
 }
 
 
