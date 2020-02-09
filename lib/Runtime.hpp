@@ -7,29 +7,38 @@
 #include <string>
 #include <map>
 #include <queue>
+#include <stdexcept>
 
 using namespace std;
 
-class Runtime{
-    public:
-        map<PID, Process> processPool;
-        queue<Process> processQueue;
+class Runtime {
+public:
+    map<PID, Process> processPool;
+    queue<Process> processQueue;
+    Process currentProcess;
 
     void schedule();
-    void execute(Process &process);
+
+    void execute();
+
     int addProcess(Process process);
+
     Process createProcess(ModuleLoader moduleLoader);
+
     PID allocatePID();
 
-    void ailStore(Process &process);
+    void ailStore();
+
+    void ailLoad();
 };
 
 
 //=================================================================
 //                      PROCESS RELATED
 //=================================================================
+
 int Runtime::addProcess(Process process) {
-    if(!processPool.count(process.pid)){
+    if (!processPool.count(process.pid)) {
         //process not in pool 
         processPool.emplace(process.pid, process);
     }
@@ -43,28 +52,27 @@ Process Runtime::createProcess(ModuleLoader moduleLoader) {
     return process;
 }
 
-PID Runtime::allocatePID(){
+PID Runtime::allocatePID() {
     return processPool.size();
 }
-
 
 
 //=================================================================
 //                      Scheduler
 //=================================================================
 void Runtime::schedule() {
-    while(!this->processQueue.empty()) {
+    while (!this->processQueue.empty()) {
         // Pop from process queue
-        Process currentProcess = this->processQueue.front();
+        this->currentProcess = this->processQueue.front();
         this->processQueue.pop();
 
         // Run the current process
         // Round Robin Scheduling
         // Set time slice as 20 (execute 20 instructions each time), then switch to next process
-        currentProcess.state = RUNNING;
+        this->currentProcess.state = RUNNING;
         for (int timeSlice = 0; timeSlice < 20; ++timeSlice) {
-            this->execute(currentProcess);
-            switch(currentProcess.state) {
+            this->execute();
+            switch (this->currentProcess.state) {
                 case RUNNING:
                     continue;
                 default:
@@ -73,36 +81,57 @@ void Runtime::schedule() {
         }
 
         // put the unfinished process to the back of the queue
-        if(currentProcess.state == RUNNING){
-            currentProcess.state = READY;
-            this->processQueue.push(currentProcess);
+        if (this->currentProcess.state == RUNNING) {
+            this->currentProcess.state = READY;
+            this->processQueue.push(this->currentProcess);
         }
-
     }
 }
 
-void Runtime::execute(Process& process) {
+void Runtime::execute() {
 
-    Instruction instruction = process.currentInstruction();
-    if (instruction.type != COMMENT && instruction.type != LABEL) {
+    Instruction instruction = this->currentProcess.currentInstruction();
+    if (instruction.type != InstructionType::COMMENT && instruction.type != InstructionType::LABEL) {
         string argument = instruction.argument;
         string mnemonic = instruction.mnemonic;
 
         if (mnemonic == "store") {
-            this->ailStore(process);
+            this->ailStore();
+        } else if (mnemonic == "load") {
+            this->ailStore();
         }
-
     }
-    process.step();
+    this->currentProcess.step();
 
-    if (process.PC >= process.instructions.size()){
-        process.state = STOPPED;
+    if (this->currentProcess.PC >= this->currentProcess.instructions.size()) {
+        this->currentProcess.state = STOPPED;
     }
 }
 
-void Runtime::ailStore(Process &process) {
 
+//=================================================================
+//              Basic Instruction : Load and Store
+//=================================================================
+
+void Runtime::ailStore() {
+    Instruction instruction = this->currentProcess.currentInstruction();
+    if (instruction.argumentType != "VARIABLE")
+        throw std::invalid_argument("[ERROR] store argument is not a variable -- aliStore");
+
+    string variableName = instruction.argument;
+    string variableValue = this->currentProcess.popOperand();
+
+//    PROCESS.GetCurrentClosure().InitBoundVariable(variable, value);
+//    PROCESS.Step();
 }
 
+void Runtime::ailLoad() {
+    Instruction instruction = this->currentProcess.currentInstruction();
+    if (instruction.argumentType != "VARIABLE")
+        throw std::invalid_argument("[ERROR] store argument is not a variable -- aliStore");
 
+    string variableName = instruction.argument;
+    string variableValue = instruction.argument;
+
+}
 #endif // !RUNTIME_HPP
