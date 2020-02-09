@@ -3,6 +3,7 @@
 
 #include "Process.hpp"
 #include "ModuleLoader.hpp"
+#include "schemeObject.hpp"
 
 #include <string>
 #include <map>
@@ -15,7 +16,7 @@ class Runtime {
 public:
     map<PID, Process> processPool;
     queue<Process> processQueue;
-    Process currentProcess;
+    std::shared_ptr<Process> currentProcessPtr;
 
     void schedule();
 
@@ -30,6 +31,8 @@ public:
     void ailStore();
 
     void ailLoad();
+
+    void ailCall();
 };
 
 
@@ -63,16 +66,16 @@ PID Runtime::allocatePID() {
 void Runtime::schedule() {
     while (!this->processQueue.empty()) {
         // Pop from process queue
-        this->currentProcess = this->processQueue.front();
+        this->currentProcessPtr = static_cast<shared_ptr<Process>>(&this->processQueue.front());
         this->processQueue.pop();
 
         // Run the current process
         // Round Robin Scheduling
         // Set time slice as 20 (execute 20 instructions each time), then switch to next process
-        this->currentProcess.state = RUNNING;
+        this->currentProcessPtr->state = RUNNING;
         for (int timeSlice = 0; timeSlice < 20; ++timeSlice) {
             this->execute();
-            switch (this->currentProcess.state) {
+            switch (this->currentProcessPtr->state) {
                 case RUNNING:
                     continue;
                 default:
@@ -81,16 +84,16 @@ void Runtime::schedule() {
         }
 
         // put the unfinished process to the back of the queue
-        if (this->currentProcess.state == RUNNING) {
-            this->currentProcess.state = READY;
-            this->processQueue.push(this->currentProcess);
+        if (this->currentProcessPtr->state == RUNNING) {
+            this->currentProcessPtr->state = READY;
+            this->processQueue.push(*this->currentProcessPtr);
         }
     }
 }
 
 void Runtime::execute() {
 
-    Instruction instruction = this->currentProcess.currentInstruction();
+    Instruction instruction = this->currentProcessPtr->currentInstruction();
     if (instruction.type != InstructionType::COMMENT && instruction.type != InstructionType::LABEL) {
         string argument = instruction.argument;
         string mnemonic = instruction.mnemonic;
@@ -98,13 +101,14 @@ void Runtime::execute() {
         if (mnemonic == "store") {
             this->ailStore();
         } else if (mnemonic == "load") {
-            this->ailStore();
+            this->ailLoad();
         }
+    } else {
+        this->currentProcessPtr->step();
     }
-    this->currentProcess.step();
 
-    if (this->currentProcess.PC >= this->currentProcess.instructions.size()) {
-        this->currentProcess.state = STOPPED;
+    if (this->currentProcessPtr->PC >= this->currentProcessPtr->instructions.size()) {
+        this->currentProcessPtr->state = STOPPED;
     }
 }
 
@@ -114,24 +118,38 @@ void Runtime::execute() {
 //=================================================================
 
 void Runtime::ailStore() {
-    Instruction instruction = this->currentProcess.currentInstruction();
+    Instruction instruction = this->currentProcessPtr->currentInstruction();
     if (instruction.argumentType != "VARIABLE")
         throw std::invalid_argument("[ERROR] store argument is not a variable -- aliStore");
 
     string variableName = instruction.argument;
-    string variableValue = this->currentProcess.popOperand();
+    string variableValue = this->currentProcessPtr->popOperand();
 
-//    PROCESS.GetCurrentClosure().InitBoundVariable(variable, value);
-//    PROCESS.Step();
+    this->currentProcessPtr->currentClosurePtr->setBoundVariable(variableName, variableValue, true);
+    this->currentProcessPtr->step();
 }
 
 void Runtime::ailLoad() {
-    Instruction instruction = this->currentProcess.currentInstruction();
+    // Unfinished
+    Instruction instruction = this->currentProcessPtr->currentInstruction();
     if (instruction.argumentType != "VARIABLE")
         throw std::invalid_argument("[ERROR] store argument is not a variable -- aliStore");
 
     string variableName = instruction.argument;
-    string variableValue = instruction.argument;
+    string variableValue = this->currentProcessPtr->dereference(variableName);
+
+    this->currentProcessPtr->step();
+}
+
+
+//=================================================================
+//                     Jump Instruction
+//=================================================================
+
+void Runtime::ailCall() {
+    Instruction instruction = this->currentProcessPtr->currentInstruction();
+    this->currentProcessPtr->pushStackFrame(this->currentProcessPtr->currentClosurePtr, this->currentProcessPtr->PC + 1)
 
 }
+
 #endif // !RUNTIME_HPP
