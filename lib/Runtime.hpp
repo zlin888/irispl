@@ -14,8 +14,8 @@ using namespace std;
 
 class Runtime {
 public:
-    map<PID, Process> processPool;
-    queue<Process> processQueue;
+    map<PID, std::shared_ptr<Process>> processPool;
+    queue<std::shared_ptr<Process>> processQueue;
     std::shared_ptr<Process> currentProcessPtr;
 
     void schedule();
@@ -41,13 +41,14 @@ public:
 //=================================================================
 
 int Runtime::addProcess(Process process) {
+    auto processPtr = std::shared_ptr<Process>(new Process(process));
     if (!processPool.count(process.pid)) {
-        //process not in pool 
-        processPool.emplace(process.pid, process);
+        //process not in pool
+        processPool.emplace(process.pid, processPtr);
     }
-    processQueue.push(process);
+    processQueue.push(processPtr);
     return process.pid;
-};
+} ;
 
 // process factory, allocate PID and help to pass module loader to the constructor of the process
 Process Runtime::createProcess(ModuleLoader moduleLoader) {
@@ -66,7 +67,7 @@ PID Runtime::allocatePID() {
 void Runtime::schedule() {
     while (!this->processQueue.empty()) {
         // Pop from process queue
-        this->currentProcessPtr = static_cast<shared_ptr<Process>>(&this->processQueue.front());
+        this->currentProcessPtr = this->processQueue.front();
         this->processQueue.pop();
 
         // Run the current process
@@ -86,7 +87,7 @@ void Runtime::schedule() {
         // put the unfinished process to the back of the queue
         if (this->currentProcessPtr->state == RUNNING) {
             this->currentProcessPtr->state = READY;
-            this->processQueue.push(*this->currentProcessPtr);
+            this->processQueue.push(this->currentProcessPtr);
         }
     }
 }
@@ -98,11 +99,22 @@ void Runtime::execute() {
         string argument = instruction.argument;
         string mnemonic = instruction.mnemonic;
 
-        if (mnemonic == "store") {
-            this->ailStore();
-        } else if (mnemonic == "load") {
-            this->ailLoad();
+        try {
+            if (mnemonic == "store") {
+                this->ailStore();
+            } else if (mnemonic == "load") {
+                this->ailLoad();
+            } else if (mnemonic == "call") {
+                this->ailCall();
+            } else {
+                this->currentProcessPtr->step();
+            }
+        } catch (exception &e) {
+            std::cout << "-> Runtime::execute, when running (" << instruction.instructionStr << ")\n";
+            std::cout << "--> " << e.what() << "\n";
+            exit(0);
         }
+
     } else {
         this->currentProcessPtr->step();
     }
@@ -119,8 +131,8 @@ void Runtime::execute() {
 
 void Runtime::ailStore() {
     Instruction instruction = this->currentProcessPtr->currentInstruction();
-    if (instruction.argumentType != "VARIABLE")
-        throw std::invalid_argument("[ERROR] store argument is not a variable -- aliStore");
+    if (instruction.argumentType != ArgumentType::VARIABEL)
+        throw std::invalid_argument("[ERROR] store argument is not a variable : aliStore");
 
     string variableName = instruction.argument;
     string variableValue = this->currentProcessPtr->popOperand();
@@ -132,8 +144,8 @@ void Runtime::ailStore() {
 void Runtime::ailLoad() {
     // Unfinished
     Instruction instruction = this->currentProcessPtr->currentInstruction();
-    if (instruction.argumentType != "VARIABLE")
-        throw std::invalid_argument("[ERROR] store argument is not a variable -- aliStore");
+    if (instruction.argumentType != ArgumentType::VARIABEL)
+        throw std::invalid_argument("[ERROR] load argument is not a variable : aliLoad");
 
     string variableName = instruction.argument;
     string variableValue = this->currentProcessPtr->dereference(variableName);
@@ -147,8 +159,35 @@ void Runtime::ailLoad() {
 //=================================================================
 
 void Runtime::ailCall() {
+    // TODO : argument type is not label
     Instruction instruction = this->currentProcessPtr->currentInstruction();
-    this->currentProcessPtr->pushStackFrame(this->currentProcessPtr->currentClosurePtr, this->currentProcessPtr->PC + 1)
+    this->currentProcessPtr->pushCurrentClosure(this->currentProcessPtr->PC + 1);
+
+    if (instruction.argumentType == ArgumentType::LABEL) {
+        //  arg[0] == '@'
+        int callInstructionAddress = this->currentProcessPtr->labelLineMap[instruction.argument];
+        string label = instruction.argument;
+
+        Handle newClosureHandle = this->currentProcessPtr->newClosure(callInstructionAddress);
+//        this->currentProcessPtr->currentClosurePtr->setFreeVariable("jack", "12", false);
+//        this->currentProcessPtr->currentClosurePtr->setBoundVariable("ijack", "88", false);
+
+        auto freeVariables = this->currentProcessPtr->currentClosurePtr->freeVariables;
+        for (auto & freeVariable : freeVariables) {
+            this->currentProcessPtr->getClosure(newClosureHandle)->setFreeVariable(freeVariable.first, freeVariable.second, false);
+        }
+
+        auto boundVariables = this->currentProcessPtr->currentClosurePtr->boundVariables;
+        for (auto & boundVariable : boundVariables) {
+            this->currentProcessPtr->getClosure(newClosureHandle)->setBoundVariable(boundVariable.first, boundVariable.second, false);
+        }
+
+        this->currentProcessPtr->setCurrentClosure(newClosureHandle);
+        int instructionAddress = this->currentProcessPtr->labelLineMap[label];
+        this->currentProcessPtr->gotoAddress(instructionAddress);
+    } else {
+        this->currentProcessPtr->step();
+    }
 
 }
 
