@@ -6,12 +6,18 @@
 #define TYPED_SCHEME_SCHEMEOBJECT_HPP
 
 #include <memory>
+#include <map>
+
 
 enum class SchemeObjectType {
     CLOSURE
 };
 
-class SchemeObject{
+map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
+        {SchemeObjectType::CLOSURE, "CLOSURE"},
+};
+
+class SchemeObject {
 public:
     SchemeObjectType schemeObjectType;
 };
