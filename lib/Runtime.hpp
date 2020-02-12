@@ -41,6 +41,8 @@ public:
     void ailCall(const Instruction &instruction);
 
     void ailAdd();
+
+    void ailDisplay();
 };
 
 
@@ -197,6 +199,7 @@ void Runtime::ailCall(const Instruction &instruction) {
     //  arg[0] == '@' : LABEL
     if (instruction.argumentType == ArgumentType::LABEL) {
 
+
         this->currentProcessPtr->pushStackFrame(this->currentProcessPtr->currentClosurePtr,
                                                 this->currentProcessPtr->PC + 1);
 
@@ -269,4 +272,19 @@ void Runtime::ailAdd() {
 }
 
 
+//=================================================================
+//                      Other Instructions
+//=================================================================
+
+void Runtime::ailDisplay() {
+    string argument = this->currentProcessPtr->popOperand();
+    ArgumentType argumentType = Instruction::getArgumentType(argument);
+
+    if (argumentType == ArgumentType::HANDLE) {
+        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(argument);
+        if (schemeObjectPtr->schemeObjectType == SchemeObjectType::STRING) {
+            //TODO display string
+        }
+    }
+}
 #endif // !RUNTIME_HPP
