@@ -12,12 +12,18 @@
 typedef string Handle;
 
 enum class SchemeObjectType {
-    CLOSURE, STRING
+    CLOSURE, STRING, LIST, LAMBDA, APPLICATION, QUOTE, QUASIQUOTE, UNQUOTE, CONTINUATION
 };
 
 map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
         {SchemeObjectType::CLOSURE, "CLOSURE"},
         {SchemeObjectType::STRING, "STRING"},
+        {SchemeObjectType::LIST, "LIST"},
+        {SchemeObjectType::LAMBDA, "LAMBDA"},
+        {SchemeObjectType::APPLICATION, "APPLICATION"},
+        {SchemeObjectType::QUOTE, "QUOTE"},
+        {SchemeObjectType::UNQUOTE, "UNQUOTE"},
+        {SchemeObjectType::CONTINUATION, "CONTINUATION"},
 };
 
 class SchemeObject {
