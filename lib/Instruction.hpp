@@ -7,13 +7,14 @@
 
 #include "Utils.hpp"
 #include <string>
+#include <regex>
 
 enum class InstructionType {
     LABEL, COMMENT, INSTRUCTION
 };
 
 enum class ArgumentType {
-    UNDEFINDED, LAMBDA, PORT, HANDLE, SYMBOL, LABEL, VARIABEL, STRING
+    UNDEFINED, LAMBDA, PORT, HANDLE, SYMBOL, LABEL, VARIABLE, STRING, NUMBER
 };
 
 using namespace std;
@@ -27,8 +28,7 @@ public:
     string argument{};
     explicit Instruction(string instString);
 
-private:
-    ArgumentType getArgumentType();
+    static ArgumentType getArgumentType(string arg);
 };
 
 
@@ -56,7 +56,7 @@ Instruction::Instruction(string instString){
             this->argument = instString.substr(splitIndex + 1, instString.size());
         }
 
-        this->argumentType = this->getArgumentType();
+        this->argumentType = this->getArgumentType(this->argument);
 //        cout << "arg -> " + this->argument + " -- " + this->argumentType + "\n";
 //        string fields = instString.split(/\s+/i);
 //        this->mnemonic = fields[0].toLowerCase();
@@ -67,10 +67,9 @@ Instruction::Instruction(string instString){
 // TODO
 // NUMBER? BOOLEAN? VARIABLE?
 // Doesn't really solve the type of parameters problem
-ArgumentType Instruction::getArgumentType() {
-    string arg = this->argument;
+ArgumentType Instruction::getArgumentType(string arg) {
     if (arg.empty()) {
-        return ArgumentType::UNDEFINDED;
+        return ArgumentType::UNDEFINED;
     } else if (arg == "lambda") {
         return ArgumentType::LAMBDA;
     } else if (arg[0] == ':') {
@@ -83,8 +82,10 @@ ArgumentType Instruction::getArgumentType() {
         return ArgumentType::LABEL;
     } else if (arg[0] == '"' && arg[arg.size() - 1] == '"') {
         return ArgumentType::STRING;
+    } else if (std::regex_match(arg, std::regex("(-?[0-9]+([.][0-9]+)?)"))) {
+        return ArgumentType::NUMBER;
     } else {
-        return ArgumentType::VARIABEL;
+        return ArgumentType::VARIABLE;
     }
 };
 

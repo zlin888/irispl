@@ -17,7 +17,7 @@ using namespace std;
 typedef int PID;
 typedef string Handle;
 
-enum ProcessState {
+enum class ProcessState {
     READY, RUNNING, SLEEPING, SUSPENDED, STOPPED
 };
 
@@ -54,7 +54,7 @@ public:
     vector<StackFrame> fStack;
     vector<Instruction> instructions;
     map<string, int> labelLineMap;
-    ProcessState state = READY;
+    ProcessState state = ProcessState::READY;
     Heap heap;
     PID pid = 0;
     int PC = 0;
@@ -80,7 +80,7 @@ public:
 
     Handle newClosure(int instructionAddress);
 
-    shared_ptr<struct Closure> getClosure(Handle closureHandle);
+    shared_ptr<struct Closure> getClosurePtr(Handle closureHandle);
 
     void setCurrentClosure(Handle closureHandle);
 
@@ -125,7 +125,7 @@ Process::Process(PID newPid, const ModuleLoader &moduleLoader) {
 
     // The top closure (not need to worry about this, because this is just a lambda (closure) acted as a beginner
     // > at the top of everything
-    this->currentClosurePtr = std::shared_ptr<Closure>(new Closure(-1, nullptr));
+    this->currentClosurePtr = std::shared_ptr<Closure>(new Closure(-1, nullptr, TOP_NODE_HANDLE));
     this->heap.set(TOP_NODE_HANDLE, this->currentClosurePtr);
 
     this->initLabelLineMap();
@@ -157,6 +157,7 @@ StackFrame Process::popStackFrame() {
         throw std::overflow_error("[ERROR] pop from empty fStack : Process::popStackFrame");
     } else {
         StackFrame sf = this->fStack.back();
+        this->fStack.pop_back();
         return sf;
     }
 }
@@ -167,27 +168,60 @@ void Process::pushCurrentClosure(int returnAddress) {
 }
 
 string Process::dereference(const string &variableName) {
-    return " ";
+    // if variable is bounded, return it
+    if(this->currentClosurePtr->hasBoundVariable(variableName)) {
+        return this->currentClosurePtr->getBoundVariable(variableName);
+    }
 
+    // if variable is free,
+    if(this->currentClosurePtr->hasFreeVariable(variableName)) {
+        string freeVariableValue = this->currentClosurePtr->getFreeVariable(variableName);
+
+        auto closurePtr = this->currentClosurePtr;
+        auto topClosurePtr = this->getClosurePtr(TOP_NODE_HANDLE);
+        while (closurePtr != topClosurePtr) {
+            if(closurePtr->hasBoundVariable(variableName)) {
+                string boundVariableValue = closurePtr->getBoundVariable(variableName);
+                if (freeVariableValue != boundVariableValue) {
+                    if(closurePtr->isDirtyVairable(variableName)) {
+                        // If set! is used in one of the parent closures to change the variable value in the closure
+                        // where the varaible is bounded, the return variable will refer to the set! value
+                        return boundVariableValue;
+                    } else {
+                        // If define is used to change the variable value, the variable value in the children closure
+                        // will be return
+                        return freeVariableValue;
+                    }
+                } else {
+                    return freeVariableValue;
+                }
+            }
+            closurePtr = closurePtr->parentClosurePtr;
+        }
+    } else {
+        throw std::runtime_error("'"+ variableName + "'" + "is undefined : dereference");
+    }
+
+    // from current closure backtrack to the top_node_handle
 }
 
 Handle Process::newClosure(int instructionAddress) {
     Handle newClosureHandle = this->heap.allocateHandle(SchemeObjectType::CLOSURE);
-    this->heap.set(newClosureHandle, std::shared_ptr<Closure>(new Closure(instructionAddress, this->currentClosurePtr)));
+    this->heap.set(newClosureHandle, std::shared_ptr<Closure>(new Closure(instructionAddress, this->currentClosurePtr, newClosureHandle)));
     return newClosureHandle;
 }
 
-shared_ptr<Closure> Process::getClosure(Handle closureHandle) {
+shared_ptr<Closure> Process::getClosurePtr(Handle closureHandle) {
     auto schemeObjectPtr = this->heap.get(closureHandle);
     if (schemeObjectPtr->schemeObjectType == SchemeObjectType::CLOSURE) {
         return static_pointer_cast<Closure>(schemeObjectPtr);
     } else {
-        throw std::invalid_argument("[ERROR] Handle is not a closureHandle : Process::getClosure");
+        throw std::invalid_argument("[ERROR] Handle is not a closureHandle : Process::getClosurePtr");
     }
 }
 
 void Process::setCurrentClosure(Handle closureHandle) {
-    auto closurePtr = this->getClosure(closureHandle);
+    auto closurePtr = this->getClosurePtr(closureHandle);
     this->currentClosurePtr = closurePtr;
 }
 
