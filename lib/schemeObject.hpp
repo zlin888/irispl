@@ -23,6 +23,7 @@ map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
         {SchemeObjectType::APPLICATION, "APPLICATION"},
         {SchemeObjectType::QUOTE, "QUOTE"},
         {SchemeObjectType::UNQUOTE, "UNQUOTE"},
+        {SchemeObjectType::QUASIQUOTE, "QUASIQUOTE"},
         {SchemeObjectType::CONTINUATION, "CONTINUATION"},
 };
 
