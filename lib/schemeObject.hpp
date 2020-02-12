@@ -7,7 +7,9 @@
 
 #include <memory>
 #include <map>
+#include "Process.hpp"
 
+typedef string Handle;
 
 enum class SchemeObjectType {
     CLOSURE
@@ -31,11 +33,12 @@ public:
     map<string, bool> dirtyFlags;
     std::shared_ptr<Closure> parentClosurePtr;
     SchemeObjectType schemeObjectType = SchemeObjectType::CLOSURE;
+    Handle selfHandle;
 
     Closure() {};
 
-    Closure(int instructionAddress, const shared_ptr<Closure> &parentClosurePtr) : instructionAddress(
-            instructionAddress), parentClosurePtr(parentClosurePtr) {};
+    Closure(int instructionAddress, const shared_ptr<Closure> &parentClosurePtr, const Handle& selfHandle) : instructionAddress(
+            instructionAddress), parentClosurePtr(parentClosurePtr), selfHandle(selfHandle) {};
 
     void setBoundVariable(const string &variableName, const string &variableValue, bool dirtyFlag);
 
@@ -48,6 +51,8 @@ public:
     string getFreeVariable(const string &variableName);
 
     bool hasFreeVariable(const string &variableName);
+
+    bool isDirtyVairable(const string &variableName);
 };
 
 //=================================================================
@@ -78,6 +83,10 @@ bool Closure::hasBoundVariable(const string &variableName) {
 
 bool Closure::hasFreeVariable(const string &variableName) {
     return this->freeVariables.count(variableName);
+}
+
+bool Closure::isDirtyVairable(const string &variableName) {
+    return this->dirtyFlags[variableName];
 }
 
 #endif //TYPED_SCHEME_SCHEMEOBJECT_HPP
