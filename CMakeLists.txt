@@ -4,3 +4,5 @@ project(typed_scheme)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(typed_scheme main.cpp)
+
+add_subdirectory(Catch_tests)
