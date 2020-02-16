@@ -10,7 +10,7 @@
 #include "Instruction.hpp"
 #include "Utils.hpp"
 #include "ModuleLoader.hpp"
-#include "schemeObject.hpp"
+#include "SchemeObject.hpp"
 
 using namespace std;
 
@@ -198,10 +198,9 @@ string Process::dereference(const string &variableName) {
             }
             closurePtr = closurePtr->parentClosurePtr;
         }
-    } else {
-        throw std::runtime_error("'"+ variableName + "'" + "is undefined : dereference");
     }
 
+    throw std::runtime_error("'"+ variableName + "'" + "is undefined : dereference");
     // from current closure backtrack to the top_node_handle
 }
 

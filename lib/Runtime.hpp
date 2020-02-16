@@ -3,7 +3,7 @@
 
 #include "Process.hpp"
 #include "ModuleLoader.hpp"
-#include "schemeObject.hpp"
+#include "SchemeObject.hpp"
 
 #include <string>
 #include <map>
@@ -198,7 +198,6 @@ void Runtime::ailCall(const Instruction &instruction) {
 
     //  arg[0] == '@' : LABEL
     if (instruction.argumentType == ArgumentType::LABEL) {
-
 
         this->currentProcessPtr->pushStackFrame(this->currentProcessPtr->currentClosurePtr,
                                                 this->currentProcessPtr->PC + 1);
