@@ -16,14 +16,14 @@ enum class SchemeObjectType {
 };
 
 map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
-        {SchemeObjectType::CLOSURE, "CLOSURE"},
-        {SchemeObjectType::STRING, "STRING"},
-        {SchemeObjectType::LIST, "LIST"},
-        {SchemeObjectType::LAMBDA, "LAMBDA"},
-        {SchemeObjectType::APPLICATION, "APPLICATION"},
-        {SchemeObjectType::QUOTE, "QUOTE"},
-        {SchemeObjectType::UNQUOTE, "UNQUOTE"},
-        {SchemeObjectType::QUASIQUOTE, "QUASIQUOTE"},
+        {SchemeObjectType::CLOSURE,      "CLOSURE"},
+        {SchemeObjectType::STRING,       "STRING"},
+        {SchemeObjectType::LIST,         "LIST"},
+        {SchemeObjectType::LAMBDA,       "LAMBDA"},
+        {SchemeObjectType::APPLICATION,  "APPLICATION"},
+        {SchemeObjectType::QUOTE,        "QUOTE"},
+        {SchemeObjectType::UNQUOTE,      "UNQUOTE"},
+        {SchemeObjectType::QUASIQUOTE,   "QUASIQUOTE"},
         {SchemeObjectType::CONTINUATION, "CONTINUATION"},
 };
 
@@ -45,7 +45,8 @@ public:
 
     Closure() {};
 
-    Closure(int instructionAddress, const shared_ptr<Closure> &parentClosurePtr, const Handle& selfHandle) : instructionAddress(
+    Closure(int instructionAddress, const shared_ptr<Closure> &parentClosurePtr, const Handle &selfHandle)
+            : instructionAddress(
             instructionAddress), parentClosurePtr(parentClosurePtr), selfHandle(selfHandle) {};
 
     void setBoundVariable(const string &variableName, const string &variableValue, bool dirtyFlag);
