@@ -8,6 +8,7 @@ int main() {
 
     // the executable file located in cmake-build-debug
     ModuleLoader moduleLoader("../docs/ILCode-test.txt");
+    Module module("/Users/bytedance/CLionProjects/typed-scheme/docs/mytest.scm");
     Process process0 = runtime.createProcess(moduleLoader);
 
     runtime.addProcess(process0);
