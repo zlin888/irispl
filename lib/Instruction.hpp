@@ -13,7 +13,7 @@ enum class InstructionType {
     LABEL, COMMENT, INSTRUCTION
 };
 
-enum class ArgumentType {
+enum class InstructionArgumentType {
     UNDEFINED, LAMBDA, PORT, HANDLE, SYMBOL, LABEL, VARIABLE, STRING, NUMBER
 };
 
@@ -22,13 +22,13 @@ using namespace std;
 class Instruction{
 public:
     InstructionType type;
-    ArgumentType argumentType{};
+    InstructionArgumentType argumentType{};
     string instructionStr{};
     string mnemonic{};
     string argument{};
     explicit Instruction(string instString);
 
-    static ArgumentType getArgumentType(string arg);
+    static InstructionArgumentType getArgumentType(string arg);
 };
 
 
@@ -67,25 +67,25 @@ Instruction::Instruction(string instString){
 // TODO
 // NUMBER? BOOLEAN? VARIABLE?
 // Doesn't really solve the type of parameters problem
-ArgumentType Instruction::getArgumentType(string arg) {
+InstructionArgumentType Instruction::getArgumentType(string arg) {
     if (arg.empty()) {
-        return ArgumentType::UNDEFINED;
+        return InstructionArgumentType::UNDEFINED;
     } else if (arg == "lambda") {
-        return ArgumentType::LAMBDA;
+        return InstructionArgumentType::LAMBDA;
     } else if (arg[0] == ':') {
-        return ArgumentType::PORT;
+        return InstructionArgumentType::PORT;
     } else if (arg[0] == '&') {
-        return ArgumentType::HANDLE;
+        return InstructionArgumentType::HANDLE;
     } else if (arg[0] == '\'') {
-        return ArgumentType::SYMBOL;
+        return InstructionArgumentType::SYMBOL;
     } else if (arg[0] == '@') {
-        return ArgumentType::LABEL;
+        return InstructionArgumentType::LABEL;
     } else if (arg[0] == '"' && arg[arg.size() - 1] == '"') {
-        return ArgumentType::STRING;
+        return InstructionArgumentType::STRING;
     } else if (std::regex_match(arg, std::regex("(-?[0-9]+([.][0-9]+)?)"))) {
-        return ArgumentType::NUMBER;
+        return InstructionArgumentType::NUMBER;
     } else {
-        return ArgumentType::VARIABLE;
+        return InstructionArgumentType::VARIABLE;
     }
 };
 
