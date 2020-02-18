@@ -136,7 +136,7 @@ void Process::pushOperand(const string &value) {
 }
 
 string Process::popOperand() {
-    if(this->opStack.empty()) {
+    if (this->opStack.empty()) {
         throw std::overflow_error("[ERROR] pop from empty opStack : Process::popOperand");
     } else {
         string popValue = this->opStack.back();
@@ -153,7 +153,7 @@ void Process::pushStackFrame(std::shared_ptr<Closure> closurePtr, int returnAddr
 }
 
 StackFrame Process::popStackFrame() {
-    if(this->fStack.empty()) {
+    if (this->fStack.empty()) {
         throw std::overflow_error("[ERROR] pop from empty fStack : Process::popStackFrame");
     } else {
         StackFrame sf = this->fStack.back();
@@ -169,21 +169,21 @@ void Process::pushCurrentClosure(int returnAddress) {
 
 string Process::dereference(const string &variableName) {
     // if variable is bounded, return it
-    if(this->currentClosurePtr->hasBoundVariable(variableName)) {
+    if (this->currentClosurePtr->hasBoundVariable(variableName)) {
         return this->currentClosurePtr->getBoundVariable(variableName);
     }
 
     // if variable is free,
-    if(this->currentClosurePtr->hasFreeVariable(variableName)) {
+    if (this->currentClosurePtr->hasFreeVariable(variableName)) {
         string freeVariableValue = this->currentClosurePtr->getFreeVariable(variableName);
 
         auto closurePtr = this->currentClosurePtr;
         auto topClosurePtr = this->getClosurePtr(TOP_NODE_HANDLE);
         while (closurePtr != topClosurePtr) {
-            if(closurePtr->hasBoundVariable(variableName)) {
+            if (closurePtr->hasBoundVariable(variableName)) {
                 string boundVariableValue = closurePtr->getBoundVariable(variableName);
                 if (freeVariableValue != boundVariableValue) {
-                    if(closurePtr->isDirtyVairable(variableName)) {
+                    if (closurePtr->isDirtyVairable(variableName)) {
                         // If set! is used in one of the parent closures to change the variable value in the closure
                         // where the varaible is bounded, the return variable will refer to the set! value
                         return boundVariableValue;
@@ -200,13 +200,14 @@ string Process::dereference(const string &variableName) {
         }
     }
 
-    throw std::runtime_error("'"+ variableName + "'" + "is undefined : dereference");
+    throw std::runtime_error("'" + variableName + "'" + "is undefined : dereference");
     // from current closure backtrack to the top_node_handle
 }
 
 Handle Process::newClosure(int instructionAddress) {
     Handle newClosureHandle = this->heap.allocateHandle(SchemeObjectType::CLOSURE);
-    this->heap.set(newClosureHandle, std::shared_ptr<Closure>(new Closure(instructionAddress, this->currentClosurePtr, newClosureHandle)));
+    this->heap.set(newClosureHandle, std::shared_ptr<Closure>(
+            new Closure(instructionAddress, this->currentClosurePtr, newClosureHandle)));
     return newClosureHandle;
 }
 
