@@ -64,6 +64,16 @@ public:
     bool isDirtyVairable(const string &variableName);
 };
 
+class Application: public SchemeObject {
+public:
+    explicit Application(Handle parentHandle) : parentHandle(parentHandle) {};
+
+    Handle parentHandle;
+    vector<Handle> childrenHandle;
+    SchemeObjectType schemeObjectType = SchemeObjectType::APPLICATION;
+};
+
+
 //=================================================================
 //                    Closure's Closure
 //=================================================================
