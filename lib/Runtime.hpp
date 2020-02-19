@@ -150,7 +150,7 @@ void Runtime::execute() {
 
 void Runtime::ailStore() {
     Instruction instruction = this->currentProcessPtr->currentInstruction();
-    if (instruction.argumentType != ArgumentType::VARIABLE)
+    if (instruction.argumentType != InstructionArgumentType::VARIABLE)
         throw std::invalid_argument("[ERROR] store argument is not a variable : aliStore");
 
     string variableName = instruction.argument;
@@ -163,13 +163,13 @@ void Runtime::ailStore() {
 void Runtime::ailLoad() {
     // Unfinished
     Instruction instruction = this->currentProcessPtr->currentInstruction();
-    if (instruction.argumentType == ArgumentType::VARIABLE) {
+    if (instruction.argumentType == InstructionArgumentType::VARIABLE) {
         string variableName = instruction.argument;
         string variableValue = this->currentProcessPtr->dereference(variableName);
 
         Instruction tempInstruction("load " + variableValue);
 
-        if (tempInstruction.argumentType == ArgumentType::LABEL) {
+        if (tempInstruction.argumentType == InstructionArgumentType::LABEL) {
             // TODO loadclosure
             this->currentProcessPtr->step();
         } else {
@@ -197,7 +197,7 @@ void Runtime::ailCall(const Instruction &instruction) {
     // Push the current closure to the fstack for storage, it will be reused after "return" of the new function
 
     //  arg[0] == '@' : LABEL
-    if (instruction.argumentType == ArgumentType::LABEL) {
+    if (instruction.argumentType == InstructionArgumentType::LABEL) {
 
         this->currentProcessPtr->pushStackFrame(this->currentProcessPtr->currentClosurePtr,
                                                 this->currentProcessPtr->PC + 1);
@@ -228,7 +228,7 @@ void Runtime::ailCall(const Instruction &instruction) {
         int instructionAddress = this->currentProcessPtr->labelLineMap[label];
         this->currentProcessPtr->gotoAddress(instructionAddress);
 
-    } else if (instruction.argumentType == ArgumentType::VARIABLE) {
+    } else if (instruction.argumentType == InstructionArgumentType::VARIABLE) {
         // TODO native calls
         string variableName = instruction.argument;
         string variableValue = this->currentProcessPtr->dereference(variableName);
@@ -261,8 +261,8 @@ void Runtime::ailAdd() {
     string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
 
-    if (Instruction::getArgumentType(operand1) == ArgumentType::NUMBER &&
-        Instruction::getArgumentType(operand2) == ArgumentType::NUMBER) {
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
         // TODO: NUMBER is not enough, we need better integer system here
         this->currentProcessPtr->pushOperand(to_string(stod(operand1) + stod(operand2)));
     }
@@ -277,9 +277,9 @@ void Runtime::ailAdd() {
 
 void Runtime::ailDisplay() {
     string argument = this->currentProcessPtr->popOperand();
-    ArgumentType argumentType = Instruction::getArgumentType(argument);
+    InstructionArgumentType argumentType = Instruction::getArgumentType(argument);
 
-    if (argumentType == ArgumentType::HANDLE) {
+    if (argumentType == InstructionArgumentType::HANDLE) {
         shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(argument);
         if (schemeObjectPtr->schemeObjectType == SchemeObjectType::STRING) {
             //TODO display string

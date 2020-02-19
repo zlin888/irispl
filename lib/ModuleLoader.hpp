@@ -12,6 +12,9 @@
 #include <regex>
 #include <boost/algorithm/string.hpp>
 #include "Utils.hpp"
+#include "Lexer.hpp"
+#include "Parser.hpp"
+#include "Heap.hpp"
 
 using namespace std;
 
@@ -71,6 +74,9 @@ void Module::importModule(const string &path) {
 
     string moduleName = this->getModuleName(path);
 
+    auto tokens = Lexer::lexer(code);
+    Parser parser(tokens, moduleName);
+    parser.parse();
 //    let currentAST = Analyse(Parse(code, moduleQualifiedName));
 }
 
