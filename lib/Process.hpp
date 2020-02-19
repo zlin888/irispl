@@ -11,30 +11,14 @@
 #include "Utils.hpp"
 #include "ModuleLoader.hpp"
 #include "SchemeObject.hpp"
+#include "Heap.hpp"
 
 using namespace std;
 
 typedef int PID;
-typedef string Handle;
 
 enum class ProcessState {
     READY, RUNNING, SLEEPING, SUSPENDED, STOPPED
-};
-
-const Handle TOP_NODE_HANDLE = "&TOP_NODE";
-
-class Heap {
-public:
-    map<Handle, std::shared_ptr<SchemeObject>> dataMap;
-    int handleCounter = 0;
-
-    bool hasHandle(Handle handle);
-
-    shared_ptr<SchemeObject> get(Handle handle);
-
-    void set(Handle handle, shared_ptr<SchemeObject> schemeObjectPtr);
-
-    Handle allocateHandle(SchemeObjectType schemeObjectType);
 };
 
 
@@ -96,7 +80,7 @@ private:
 //=================================================================
 void Process::initLabelLineMap() {
     // Label is normally the indication of beginning of a function (lambda)
-    // this mapping represents the mapping between the label and the index of the corresponding instructionStr
+    // this mapping represents the mapping between the label and the sourceIndex of the corresponding instructionStr
     for (int i = 0; i < this->instructions.size(); ++i) {
         Instruction instruction = this->instructions[i];
         if (instruction.type == InstructionType::LABEL) {
@@ -227,34 +211,6 @@ void Process::setCurrentClosure(Handle closureHandle) {
 
 void Process::gotoAddress(int instructionAddress) {
     this->PC = instructionAddress;
-}
-
-
-//=================================================================
-//                           Heap
-//=================================================================
-
-bool Heap::hasHandle(Handle handle) {
-    return this->dataMap.count(handle);
-}
-
-std::shared_ptr<SchemeObject> Heap::get(Handle handle) {
-    if (this->hasHandle(handle)) {
-        return this->dataMap[handle];
-    } else {
-        throw std::out_of_range("[ERROR] handle holds nothing -- Heap::get");
-    }
-}
-
-void Heap::set(Handle handle, std::shared_ptr<SchemeObject> schemeObjectPtr) {
-    this->dataMap[handle] = schemeObjectPtr;
-}
-
-Handle Heap::allocateHandle(SchemeObjectType schemeObjectType) {
-    Handle handle = "&" + SchemeObjectTypeStrMap[schemeObjectType] + "_" + to_string(this->handleCounter);
-    this->handleCounter++;
-    this->dataMap.emplace(handle, nullptr);
-    return handle;
 }
 
 #endif // !PROCESS_HPP

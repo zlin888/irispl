@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <map>
+#include <regex>
 #include "Process.hpp"
 
 typedef string Handle;
@@ -64,15 +65,51 @@ public:
     bool isDirtyVairable(const string &variableName);
 };
 
-class Application: public SchemeObject {
+class ApplicationObject : public SchemeObject {
 public:
-    explicit Application(Handle parentHandle) : parentHandle(parentHandle) {};
+    explicit ApplicationObject(Handle parentHandle) : parentHandle(parentHandle) {};
 
     Handle parentHandle;
-    vector<Handle> childrenHandle;
+    vector<Handle> childrenHandles;
     SchemeObjectType schemeObjectType = SchemeObjectType::APPLICATION;
 };
 
+class LambdaObject : public SchemeObject {
+public:
+    explicit LambdaObject(Handle parentHandle) : parentHandle(parentHandle) {};
+    Handle parentHandle;
+    vector<Handle> childrenHandles;
+    SchemeObjectType schemeObjectType = SchemeObjectType::LAMBDA;
+};
+
+class QuoteObject : public SchemeObject {
+public:
+    explicit QuoteObject(Handle parentHandle) : parentHandle(parentHandle) {};
+    Handle parentHandle;
+    SchemeObjectType schemeObjectType = SchemeObjectType::QUOTE;
+};
+
+class QuasiquoteObject : public SchemeObject {
+public:
+    explicit QuasiquoteObject(Handle parentHandle) : parentHandle(parentHandle) {};
+    Handle parentHandle;
+    SchemeObjectType schemeObjectType = SchemeObjectType::QUASIQUOTE;
+};
+
+class UnquoteObject : public SchemeObject {
+public:
+    explicit UnquoteObject(Handle parentHandle) : parentHandle(parentHandle) {};
+    Handle parentHandle;
+    SchemeObjectType schemeObjectType = SchemeObjectType::UNQUOTE;
+};
+
+class StringObject : public SchemeObject {
+public:
+    string content;
+    SchemeObjectType schemeObjectType = SchemeObjectType::STRING;
+
+    StringObject(string content) : content(content) {}
+};
 
 //=================================================================
 //                    Closure's Closure
@@ -106,6 +143,47 @@ bool Closure::hasFreeVariable(const string &variableName) {
 
 bool Closure::isDirtyVairable(const string &variableName) {
     return this->dirtyFlags[variableName];
+}
+
+
+enum class Type {
+    UNDEFINED, LAMBDA, PORT, HANDLE, SYMBOL, LABEL, VARIABLE, STRING, NUMBER
+};
+// TODO: change keywords to c++'s set
+const KEYWORDS =
+[
+"car",    "cdr",    "cons",    "cond",    "if",    "else",    "begin",
+"+",      "-",      "*",       "/",       "=",     "%",       "pow",
+"and",     "or",    "not",     ">",       "<",     ">=",      "<=",    "eq?",
+"define", "set!",   "null?",   "atom?",   "list?", "number?",
+"display","newline",
+"write",  "read",
+"call/cc",
+"import", "native",
+"fork",
+"quote",  "quasiquote",  "unquote",
+];
+
+Type typeOfStr(const string &symbol) {
+    if (symbol.empty()) {
+        return Type::UNDEFINED;
+    } else if (symbol == "lambda") {
+        return Type::LAMBDA;
+    } else if (symbol[0] == ':') {
+        return Type::PORT;
+    } else if (symbol[0] == '&') {
+        return Type::HANDLE;
+    } else if (symbol[0] == '\'') {
+        return Type::SYMBOL;
+    } else if (symbol[0] == '@') {
+        return Type::LABEL;
+    } else if (symbol[0] == '"' && symbol[symbol.size() - 1] == '"') {
+        return Type::STRING;
+    } else if (std::regex_match(symbol, std::regex("(-?[0-9]+([.][0-9]+)?)"))) {
+        return Type::NUMBER;
+    } else {
+        return Type::VARIABLE;
+    }
 }
 
 #endif //TYPED_SCHEME_SCHEMEOBJECT_HPP
