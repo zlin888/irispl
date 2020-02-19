@@ -25,7 +25,7 @@ TEST_CASE("Lexer Test", "[LexerTests]") {
 //        cout << expectedTokens[i];
         cout << tokens[i];
 //        REQUIRE(expectedToken.string == token.string);
-//        REQUIRE(expectedToken.index == token.index);
+//        REQUIRE(expectedToken.sourceIndex == token.sourceIndex);
     }
 
 }
@@ -65,3 +65,16 @@ vector<Lexer::Token> readExpectedOutput(const string& path) {
 
     return expectedTokens;
 }
+
+TEST_CASE("split test", "[utilsTests]") {
+    string string_to_split = "jack/is\\crazy! ?";
+    std::regex rgx(R"([\s+/\\\\])");
+    std::sregex_token_iterator iter(string_to_split.begin(),
+                                    string_to_split.end(),
+                                    rgx,
+                                    -1);
+    std::sregex_token_iterator end;
+    for ( ; iter != end; ++iter)
+        std::cout << *iter << '\n';
+}
+
