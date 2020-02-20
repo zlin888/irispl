@@ -8,6 +8,7 @@
 #include <memory>
 #include <map>
 #include <regex>
+#include <set>
 #include "Process.hpp"
 
 typedef string Handle;
@@ -147,39 +148,42 @@ bool Closure::isDirtyVairable(const string &variableName) {
 
 
 enum class Type {
-    UNDEFINED, LAMBDA, PORT, HANDLE, SYMBOL, LABEL, VARIABLE, STRING, NUMBER
+    UNDEFINED, LAMBDA, PORT, HANDLE, SYMBOL, LABEL, VARIABLE, STRING, NUMBER, KEYWORD, BOOLEAN
 };
-// TODO: change keywords to c++'s set
-const KEYWORDS =
-[
-"car",    "cdr",    "cons",    "cond",    "if",    "else",    "begin",
-"+",      "-",      "*",       "/",       "=",     "%",       "pow",
-"and",     "or",    "not",     ">",       "<",     ">=",      "<=",    "eq?",
-"define", "set!",   "null?",   "atom?",   "list?", "number?",
-"display","newline",
-"write",  "read",
-"call/cc",
-"import", "native",
-"fork",
-"quote",  "quasiquote",  "unquote",
-];
 
-Type typeOfStr(const string &symbol) {
-    if (symbol.empty()) {
+set<string> KEYWORDS = {
+        "car", "cdr", "cons", "cond", "if", "else", "begin",
+        "+", "-", "*", "/", "=", "%", "pow",
+        "and", "or", "not", ">", "<", ">=", "<=", "eq?",
+        "define", "set!", "null?", "atom?", "list?", "number?",
+        "display", "newline",
+        "write", "read",
+        "call/cc",
+        "import", "native",
+        "fork",
+        "quote", "quasiquote", "unquote",
+};
+
+Type typeOfStr(const string &inputStr) {
+    if (inputStr.empty()) {
         return Type::UNDEFINED;
-    } else if (symbol == "lambda") {
+    } else if (KEYWORDS.count(inputStr) != 0) {
+        return Type::KEYWORD;
+    } else if (inputStr == "#t" || inputStr == "#f") {
+        return Type::BOOLEAN;
+    } else if (inputStr == "lambda") {
         return Type::LAMBDA;
-    } else if (symbol[0] == ':') {
+    } else if (inputStr[0] == ':') {
         return Type::PORT;
-    } else if (symbol[0] == '&') {
+    } else if (inputStr[0] == '&') {
         return Type::HANDLE;
-    } else if (symbol[0] == '\'') {
+    } else if (inputStr[0] == '\'') {
         return Type::SYMBOL;
-    } else if (symbol[0] == '@') {
+    } else if (inputStr[0] == '@') {
         return Type::LABEL;
-    } else if (symbol[0] == '"' && symbol[symbol.size() - 1] == '"') {
+    } else if (inputStr[0] == '"' && inputStr[inputStr.size() - 1] == '"') {
         return Type::STRING;
-    } else if (std::regex_match(symbol, std::regex("(-?[0-9]+([.][0-9]+)?)"))) {
+    } else if (std::regex_match(inputStr, std::regex("(-?[0-9]+([.][0-9]+)?)"))) {
         return Type::NUMBER;
     } else {
         return Type::VARIABLE;
