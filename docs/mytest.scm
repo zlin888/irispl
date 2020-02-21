@@ -1,5 +1,5 @@
-; (import Utils      "/Users/zhitaolin/Local/AuroraScheme/testcase/aurora.test.utils.scm")
-; (import ManOrBoy   "/Users/zhitaolin/Local/AuroraScheme/testcase/aurora.test.MoB.scm")
+(import Utils      "/Users/zhitaolin/Local/AuroraScheme/testcase/aurora.test.utils.scm")
+(import ManOrBoy   "/Users/zhitaolin/Local/AuroraScheme/testcase/aurora.test.MoB.scm")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; AuroraScheme测试用例 ;;
@@ -8,6 +8,7 @@
 ;; 简单的中缀表达式解析
 ;; 参见 The Little Schemer
 
+(define a (lambda (f) '(f + 12)))
 (define numbered?
   (lambda (aexp)
     (cond ((atom? aexp) (number? aexp))
@@ -28,5 +29,6 @@
           (else (display "Unexpected operator")))))
 
 (display (value '((1 / 3) - (1 / 4))))
+(define f #f)
 
 
