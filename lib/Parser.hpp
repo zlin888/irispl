@@ -10,6 +10,8 @@
 #include "Lexer.hpp"
 #include "SchemeObject.hpp"
 #include "Heap.hpp"
+#include <stdexcept>
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 
@@ -28,13 +30,13 @@ public:
 class Parser {
 public:
     vector<string> stateStack;
-    vector<Handle> nodeStack;
+    vector<HandleOrStr> nodeStack; //nodeStack can store both Handle and string
 
     // One Parser has one AST !!!
     AST ast;
     vector<Lexer::Token> tokens;
 
-    void parse(const string &moduleName);
+    AST parse();
 
     int parseTerm(int index);
 
@@ -57,11 +59,19 @@ public:
 
     int parseBody(int index);
 
+    int parseBodyTail(int index);
+
+    int parseBodyTerm(int index);
+
     int parseQuote(int index);
 
     int parseUnquote(int index);
 
+    int parseUnquoteTerm(int index);
+
     int parseQuasiquote(int index);
+
+    int parseQuasiquoteTerm(int index);
 
     int parseSList(int index);
 
@@ -73,8 +83,9 @@ public:
 };
 
 
-void Parser::parse(const string &moduleName) {
+AST Parser::parse() {
     this->parseTerm(0);
+    return this->ast;
 }
 
 int Parser::parseTerm(int index) {
@@ -135,10 +146,13 @@ int Parser::parseLambda(int index) {
     ast.nodeSourceIndexes[lambdaHandle] = this->tokens[index].sourceIndex;
 
     int nextIndex = this->parseArgList(index + 2);
-    int nextIndex = this->parseBody(nextIndex);
+    nextIndex = this->parseBody(nextIndex);
 
-    if (this->tokens[nextIndex].string == ')') { return nextIndex + 1; }
-    else { throw "<Lambda>"; }
+    if (this->tokens[nextIndex].string == ")") {
+        return nextIndex + 1;
+    } else {
+        throw "<Lambda> ')' is not found -- in " + to_string(tokens[index].sourceIndex);
+    }
 }
 
 int Parser::parseArgList(int index) {
@@ -165,11 +179,12 @@ int Parser::parseArgListSeq(int index) {
     if (this->isSymbol(tokens[index].string)) {
         int nextIndex = this->parseArgSymbol(index);
 
-// Action：从节点栈顶弹出节点（必须是符号），追加到新栈顶Lambda节点的parameters中。
-        Handle parameter = this->nodeStack.pop();
-        ast.GetNode(Top(NODE_STACK)).addParameter(parameter);
+        // get symbol from nodeStack, and add it to the parameters of lamdba node
+        string parameter = this->nodeStack.back();
+        this->nodeStack.pop_back();
+        static_pointer_cast<LambdaObject>(this->ast.heap.get(this->nodeStack.back()))->addParameter(parameter);
 
-        nextIndex = ParseArgListSeq(tokens, nextIndex);
+        nextIndex = this->parseArgListSeq(nextIndex);
         return nextIndex;
     } else {
         return index;
@@ -186,15 +201,40 @@ int Parser::parseBody(int index) {
     int nextIndex = this->parseBodyTerm(index);
 
     // Action：从节点栈顶弹出节点，追加到新栈顶Lambda节点的body中。
-    let bodyNode = NODE_STACK.pop();
-    ast.GetNode(Top(NODE_STACK)).addBody(bodyNode);
+    HandleOrStr bodyHos = this->nodeStack.back();
+    this->nodeStack.pop_back();
+    static_pointer_cast<LambdaObject>(this->ast.heap.get(this->nodeStack.back()))->addBody(bodyHos);
 
-    nextIndex = ParseBodyTail(tokens, nextIndex);
+    nextIndex = this->parseBodyTail(nextIndex);
     return nextIndex;
 }
 
+int Parser::parseBodyTail(int index) {
+    this->parseLog("<Body_> → <BodyTerm> ※ <Body_> | ε");
+    string currentToken = tokens[index].string;
+    if (currentToken == "(" || currentToken == "'" || currentToken == "," ||
+        currentToken == "`" || isSymbol(currentToken)) {
+        int nextIndex = this->parseBodyTerm(index);
+
+        // Action：从节点栈顶弹出节点，追加到新栈顶Lambda节点的body中。
+        HandleOrStr bodyHos = this->nodeStack.back();
+        this->nodeStack.pop_back();
+        static_pointer_cast<LambdaObject>(this->ast.heap.get(this->nodeStack.back()))->addBody(bodyHos);
+
+        nextIndex = this->parseBodyTail(nextIndex);
+        return nextIndex;
+    } else {
+        return index;
+    }
+}
+
+int Parser::parseBodyTerm(int index) {
+    this->parseLog("<BodyTerm> → <Term>");
+    return this->parseTerm(index);
+}
+
 int Parser::parseQuote(int index) {
-    parseLog("<Quote> → \' ※1 <QuoteTerm> ※2");
+    this->parseLog("<Quote> → ' ※1 <QuoteTerm> ※2");
     // Action1
     this->stateStack.push_back("QUOTE");
     int nextIndex = this->parseQuoteTerm(index + 1);
@@ -204,28 +244,49 @@ int Parser::parseQuote(int index) {
 }
 
 int Parser::parseQuoteTerm(int index) {
-    parseLog("<QuoteTerm> → <Term>");
-    return parseTerm(this->tokens, index);
+    this->parseLog("<QuoteTerm> → <Term>");
+    return this->parseTerm(index);
 }
 
 int Parser::parseUnquote(int index) {
+    this->parseLog("<Unquote> → , ※1 <UnquoteTerm> ※2");
+    // Action1
+    this->stateStack.push_back("UNQUOTE");
+    int nextIndex = this->parseUnquoteTerm(index+1);
+    // Action2
+    this->stateStack.pop_back();
+    return nextIndex;
+}
 
+int Parser::parseUnquoteTerm(int index) {
+    this->parseLog("<UnquoteTerm> → <Term>");
+    return this->parseTerm(index);
 }
 
 int Parser::parseQuasiquote(int index) {
+    this->parseLog("<Quasiquote> → ` ※1 <QuasiquoteTerm> ※2");
+    // Action1
+    this->stateStack.push_back("QUASIQUOTE");
+    int nextIndex = this->parseQuasiquoteTerm(index+1);
+    // Action2
+    this->stateStack.pop_back();
+    return nextIndex;
+}
 
+int Parser::parseQuasiquoteTerm(int index) {
+    this->parseLog("<QuasiquoteTerm> → <Term>");
+    return this->parseTerm(index);
 }
 
 int Parser::parseSList(int index) {
     parseLog("<SList> → ( ※ <SListSeq> )");
-
     string quoteType = this->stateStack.empty() ? "" : this->stateStack.back();
+    // sListHandle maybe point to quote, unquote, quasiquote object
     Handle sListHandle = this->ast.heap.makeApplication(this->ast.moduleName, this->nodeStack.back(), quoteType);
 
     this->nodeStack.push_back(sListHandle);
 
     ast.nodeSourceIndexes[sListHandle] = this->tokens[index].sourceIndex;
-
     int nextIndex = this->parseSListSeq(index + 1);
 
     if (this->tokens[nextIndex].string == ")") {
@@ -237,9 +298,10 @@ int Parser::parseSList(int index) {
 
 int Parser::parseSListSeq(int index) {
     parseLog("<SListSeq> → <Term> ※ <SListSeq> | ε");
+    string quoteType = this->stateStack.empty() ? "" : this->stateStack.back();
 
     if (index >= this->tokens.size())
-        throw "<SList> left ) is not found";
+        throw runtime_error("<SList> left ) is not found");
 
     auto currentTokenStr = this->tokens[index].string;
 
@@ -248,11 +310,13 @@ int Parser::parseSListSeq(int index) {
         int nextIndex = this->parseTerm(index);
 
         // Action：从节点栈顶弹出节点，追加到新栈顶节点的children中。
-        Handle childHandle = nodeStack.back();
+        HandleOrStr childHos = nodeStack.back();
         nodeStack.pop_back();
-        this->ast.heap.get(nodeStack.back());
-//        ast.GetNode(Top(NODE_STACK)).children.push(childHandle);
-
+        if (quoteType.empty()) {
+            //nodeStack.back() is a handle to application
+            static_pointer_cast<ApplicationObject>(this->ast.heap.get(this->nodeStack.back()))->addChild(childHos);
+        }
+        // TODO: nodeStack.back() is a handle to quote, unquote, quasiquoteand
         nextIndex = this->parseSListSeq(nextIndex);
         return nextIndex;
     } else {
@@ -265,67 +329,62 @@ int Parser::parseSymbol(int index) {
     if (isSymbol(currentTokenStr)) {
         // Action
         string state = this->stateStack.back();
+        Type type = typeOfStr(currentTokenStr);
         if (state == "QUOTE" || state == "QUASIQUOTE") {
-            Type type = typeOfStr(currentTokenStr);
-            // 被quote的常量和字符串不受影响
+            // NUMBER and string in quote are not affected
             if (type == Type::NUMBER) {
                 this->nodeStack.push_back(currentTokenStr);
             } else if (type == Type::STRING) {
-                Handle stringHandle = this->ast.heap.makeString(currentTokenStr);
+                Handle stringHandle = this->ast.heap.makeString(this->ast.moduleName, currentTokenStr);
                 this->nodeStack.push_back(stringHandle);
                 this->ast.nodeSourceIndexes[stringHandle] = tokens[index].sourceIndex;
             } else if (type == Type::SYMBOL) {
                 this->nodeStack.push_back(currentTokenStr);
-            }
-                // 被quote的变量和关键字（除了quote、unquote和quasiquote），变成symbol
-            else if (type == Type::VARIABLE || type == "KEYWORD" || type == "PORT" ||
-                     (currentTokenStr !=
-                      "quasiquote" && currentTokenStr !=
-                                      "quote" &&
-                      currentTokenStr != "unquote")) {
-                NODE_STACK.push(`'${currentToken}`);
+            } else if ((type == Type::VARIABLE || type == Type::KEYWORD || type == Type::PORT) &&
+                       currentTokenStr != "quasiquote" && currentTokenStr != "quote" && currentTokenStr != "unquote") {
+                //quoted variable, keyword, port is pushed as symbol
+                this->nodeStack.push_back("'" + currentTokenStr);
             } else { // 含boolean在内的变量、把柄等
-                NODE_STACK.push(currentTokenStr);
+                this->nodeStack.push_back(currentTokenStr);
             }
-        } else if (state == = 'UNQUOTE') {
-            let type = TypeOfToken(currentTokenStr);
+        } else if (state == "UNQUOTE") {
             // 符号会被解除引用
-            if (type == = "SYMBOL") {
-                NODE_STACK.push(currentTokenStr.replace( / ^\'*/gi, "")); // VARIABLE
+            if (type == Type::SYMBOL) {
+                boost::replace_all(currentTokenStr, "'", "");
+                this->nodeStack.push_back(currentTokenStr);
             }
                 // 其他所有类型不受影响
-            else if (type == = "NUMBER") {
-                NODE_STACK.push(parseFloat(currentTokenStr));
-            } else if (type == = "STRING") {
-                let stringHandle = ast.MakeStringNode(currentTokenStr);
-                NODE_STACK.push(stringHandle);
-                ast.nodeIndexes.set(stringHandle, tokens[index].index);
-            } else if (type == = "VARIABLE" || type == = "KEYWORD" || type == = "BOOLEAN" || type == = "PORT") {
-                NODE_STACK.push(currentTokenStr); // VARIABLE原样保留，在作用域分析的时候才被录入AST
+            else if (type == Type::NUMBER) {
+                this->nodeStack.push_back(currentTokenStr);
+            } else if (type == Type::STRING) {
+                Handle stringHandle = this->ast.heap.makeString(this->ast.moduleName, currentTokenStr);
+                this->nodeStack.push_back(stringHandle);
+                this->ast.nodeSourceIndexes[stringHandle] = tokens[index].sourceIndex;
+            } else if (type == Type::VARIABLE || type == Type::KEYWORD || type == Type::BOOLEAN || type == Type::PORT) {
+                // VARIABLE原样保留，在作用域分析的时候才被录入AST
+                this->nodeStack.push_back(currentTokenStr);
             } else {
-                throw `<Type> Illegal
-                symbol.`
+                throw "<Symbol> Illegal symbol";
             }
         } else {
-            let type = TypeOfToken(currentTokenStr);
-            if (type == = "NUMBER") {
-                NODE_STACK.push(parseFloat(currentTokenStr));
-            } else if (type == = "STRING") {
-                let stringHandle = ast.MakeStringNode(currentTokenStr);
-                NODE_STACK.push(stringHandle);
-                ast.nodeIndexes.set(stringHandle, tokens[index].index);
-            } else if (type == = "SYMBOL") {
-                NODE_STACK.push(currentTokenStr);
-            } else if (type == = "VARIABLE" || type == = "KEYWORD" || type == = "BOOLEAN" || type == = "PORT") {
-                NODE_STACK.push(currentTokenStr); // VARIABLE原样保留，在作用域分析的时候才被录入AST
+            if (type == Type::NUMBER) {
+                this->nodeStack.push_back(currentTokenStr);
+            } else if (type == Type::STRING) {
+                Handle stringHandle = this->ast.heap.makeString(this->ast.moduleName, currentTokenStr);
+                this->nodeStack.push_back(stringHandle);
+                this->ast.nodeSourceIndexes[stringHandle] = tokens[index].sourceIndex;
+            } else if (type == Type::SYMBOL) {
+                this->nodeStack.push_back(currentTokenStr);
+            } else if (type == Type::VARIABLE || type == Type::KEYWORD || type == Type::BOOLEAN || type == Type::PORT) {
+                // VARIABLE原样保留，在作用域分析的时候才被录入AST
+                this->nodeStack.push_back(currentTokenStr);
             } else {
-                throw `<Type> Illegal
-                symbol.`
+                throw "<Symbol> Illegal symbol";
             }
         }
         return index + 1;
     } else {
-        throw "<Symbol>";
+        throw "<Symbol> Illegal symbol";
     }
 }
 

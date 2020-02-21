@@ -76,7 +76,8 @@ void Module::importModule(const string &path) {
 
     auto tokens = Lexer::lexer(code);
     Parser parser(tokens, moduleName);
-    parser.parse();
+    AST currentAST = parser.parse();
+    cout << currentAST.moduleName;
 //    let currentAST = Analyse(Parse(code, moduleQualifiedName));
 }
 

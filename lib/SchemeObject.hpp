@@ -9,9 +9,11 @@
 #include <map>
 #include <regex>
 #include <set>
+#include <algorithm>
 #include "Process.hpp"
 
 typedef string Handle;
+typedef string HandleOrStr;
 
 enum class SchemeObjectType {
     CLOSURE, STRING, LIST, LAMBDA, APPLICATION, QUOTE, QUASIQUOTE, UNQUOTE, CONTINUATION
@@ -31,7 +33,10 @@ map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
 
 class SchemeObject {
 public:
+    SchemeObject(SchemeObjectType schemeObjectType) : schemeObjectType(schemeObjectType) {};
+
     SchemeObjectType schemeObjectType;
+
 };
 
 class Closure : public SchemeObject {
@@ -45,10 +50,10 @@ public:
     SchemeObjectType schemeObjectType = SchemeObjectType::CLOSURE;
     Handle selfHandle;
 
-    Closure() {};
+    Closure() : SchemeObject(SchemeObjectType::CLOSURE) {};
 
     Closure(int instructionAddress, const shared_ptr<Closure> &parentClosurePtr, const Handle &selfHandle)
-            : instructionAddress(
+            : SchemeObject(SchemeObjectType::CLOSURE), instructionAddress(
             instructionAddress), parentClosurePtr(parentClosurePtr), selfHandle(selfHandle) {};
 
     void setBoundVariable(const string &variableName, const string &variableValue, bool dirtyFlag);
@@ -68,38 +73,74 @@ public:
 
 class ApplicationObject : public SchemeObject {
 public:
-    explicit ApplicationObject(Handle parentHandle) : parentHandle(parentHandle) {};
+    ApplicationObject(Handle parentHandle) : SchemeObject(SchemeObjectType::APPLICATION),
+                                             parentHandle(parentHandle) {};
 
     Handle parentHandle;
-    vector<Handle> childrenHandles;
-    SchemeObjectType schemeObjectType = SchemeObjectType::APPLICATION;
+    vector<HandleOrStr> childrenHoses;
+    void addChild(HandleOrStr childHos);
 };
 
+void ApplicationObject::addChild(HandleOrStr childHos) {
+    this->childrenHoses.push_back(childHos);
+}
+
+// [lambda, [param0, ... ], body0, ...]
 class LambdaObject : public SchemeObject {
 public:
-    explicit LambdaObject(Handle parentHandle) : parentHandle(parentHandle) {};
+    LambdaObject(Handle parentHandle) : SchemeObject(SchemeObjectType::LAMBDA), parentHandle(parentHandle) {};
     Handle parentHandle;
-    vector<Handle> childrenHandles;
+    vector<HandleOrStr> bodies;
+    vector<Handle> parameters;
     SchemeObjectType schemeObjectType = SchemeObjectType::LAMBDA;
+
+    bool hasParameter(string paramter);
+
+    bool addParameter(string paramter);
+
+    void addBody(HandleOrStr handleOrStr);
 };
+
+
+bool LambdaObject::hasParameter(string paramter) {
+    if (find(this->parameters.begin(), this->parameters.end(), paramter) != this->parameters.end()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool LambdaObject::addParameter(string paramter) {
+    if (this->hasParameter(paramter)) {
+        return false;
+    } else {
+        this->parameters.push_back(paramter);
+        return true;
+    }
+}
+
+
+void LambdaObject::addBody(HandleOrStr handleOrStr) {
+    this->bodies.push_back(handleOrStr);
+}
 
 class QuoteObject : public SchemeObject {
 public:
-    explicit QuoteObject(Handle parentHandle) : parentHandle(parentHandle) {};
+    QuoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUOTE), parentHandle(parentHandle) {};
     Handle parentHandle;
     SchemeObjectType schemeObjectType = SchemeObjectType::QUOTE;
 };
 
 class QuasiquoteObject : public SchemeObject {
 public:
-    explicit QuasiquoteObject(Handle parentHandle) : parentHandle(parentHandle) {};
+    QuasiquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUASIQUOTE), parentHandle(parentHandle) {};
     Handle parentHandle;
     SchemeObjectType schemeObjectType = SchemeObjectType::QUASIQUOTE;
 };
 
 class UnquoteObject : public SchemeObject {
 public:
-    explicit UnquoteObject(Handle parentHandle) : parentHandle(parentHandle) {};
+    UnquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::UNQUOTE), parentHandle(parentHandle) {};
     Handle parentHandle;
     SchemeObjectType schemeObjectType = SchemeObjectType::UNQUOTE;
 };
@@ -109,7 +150,7 @@ public:
     string content;
     SchemeObjectType schemeObjectType = SchemeObjectType::STRING;
 
-    StringObject(string content) : content(content) {}
+    StringObject(string content) : SchemeObject(SchemeObjectType::STRING), content(content) {}
 };
 
 //=================================================================
