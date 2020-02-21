@@ -129,21 +129,39 @@ public:
     QuoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUOTE), parentHandle(parentHandle) {};
     Handle parentHandle;
     SchemeObjectType schemeObjectType = SchemeObjectType::QUOTE;
+    vector<HandleOrStr> childrenHoses;
+    void addChild(HandleOrStr childHos);
 };
+
+void QuoteObject::addChild(HandleOrStr childHos) {
+    this->childrenHoses.push_back(childHos);
+}
+
 
 class QuasiquoteObject : public SchemeObject {
 public:
     QuasiquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUASIQUOTE), parentHandle(parentHandle) {};
     Handle parentHandle;
     SchemeObjectType schemeObjectType = SchemeObjectType::QUASIQUOTE;
+    vector<HandleOrStr> childrenHoses;
+    void addChild(HandleOrStr childHos);
 };
+
+void QuasiquoteObject::addChild(HandleOrStr childHos) {
+    this->childrenHoses.push_back(childHos);
+}
 
 class UnquoteObject : public SchemeObject {
 public:
     UnquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::UNQUOTE), parentHandle(parentHandle) {};
     Handle parentHandle;
-    SchemeObjectType schemeObjectType = SchemeObjectType::UNQUOTE;
+    vector<HandleOrStr> childrenHoses;
+    void addChild(HandleOrStr childHos);
 };
+
+void UnquoteObject::addChild(HandleOrStr childHos) {
+    this->childrenHoses.push_back(childHos);
+}
 
 class StringObject : public SchemeObject {
 public:

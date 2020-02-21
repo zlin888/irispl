@@ -80,11 +80,14 @@ public:
     int parseQuoteTerm(int index);
 
     int parseSListSeq(int index);
+
+    void preProcessAnalysis();
 };
 
 
 AST Parser::parse() {
     this->parseTerm(0);
+    this->preProcessAnalysis();
     return this->ast;
 }
 
@@ -101,21 +104,21 @@ int Parser::parseTerm(int index) {
         nextIndex = this->parseQuote(index + 1);
         if (this->tokens[nextIndex].string == ")") { return nextIndex + 1; }
         else {
-            throw "[Error] quote 右侧括号未闭合。";
+            throw runtime_error("[Error] quote 右侧括号未闭合。");
         }
     } else if (this->tokens[index].string == "(" && this->tokens[index + 1].string == "unquote") {
         this->parseLog("<Term> → <Unquote>");
         nextIndex = this->parseUnquote(index + 1);
         if (this->tokens[nextIndex].string == ")") { return nextIndex + 1; }
         else {
-            throw "[Error] unquote 右侧括号未闭合。";
+            throw runtime_error("[Error] unquote 右侧括号未闭合。");
         }
     } else if (this->tokens[index].string == "(" && this->tokens[index + 1].string == "quasiquote") {
         this->parseLog("<Term> → <Quasiquote>");
         nextIndex = parseQuasiquote(index + 1);
         if (this->tokens[nextIndex].string == ")") { return nextIndex + 1; }
         else {
-            throw "[Error] quasiquote 右侧括号未闭合。";
+            throw runtime_error("[Error] quasiquote 右侧括号未闭合。");
         }
     } else if (this->tokens[index].string == "\'") {
         this->parseLog("<Term> → <Quote>");
@@ -133,7 +136,7 @@ int Parser::parseTerm(int index) {
         this->parseLog("<Term> → <Symbol>");
         return this->parseSymbol(index);
     } else {
-        throw "undefined token " + this->tokens[index].string;
+        throw runtime_error("undefined token " + this->tokens[index].string);
     }
 }
 
@@ -151,7 +154,7 @@ int Parser::parseLambda(int index) {
     if (this->tokens[nextIndex].string == ")") {
         return nextIndex + 1;
     } else {
-        throw "<Lambda> ')' is not found -- in " + to_string(tokens[index].sourceIndex);
+        throw runtime_error("<Lambda> ')' is not found -- in " + to_string(tokens[index].sourceIndex));
     }
 }
 
@@ -159,7 +162,7 @@ int Parser::parseArgList(int index) {
     this->parseLog("<ArgList> → ( ※1 <ArgListSeq> ※2)");
 
     if (tokens[index].string != "(") {
-        throw "<ArgList> '(' is not found -- in " + to_string(tokens[index].sourceIndex);
+        throw runtime_error("<ArgList> '(' is not found -- in " + to_string(tokens[index].sourceIndex));
     }
 
     this->stateStack.push_back("PARAMETER");
@@ -170,7 +173,7 @@ int Parser::parseArgList(int index) {
     if (tokens[nextIndex].string == ")") {
         return nextIndex + 1;
     } else {
-        throw "<ArgList> ')' is not found -- in " + to_string(tokens[index].sourceIndex);
+        throw runtime_error("<ArgList> ')' is not found -- in " + to_string(tokens[index].sourceIndex));
     }
 }
 
@@ -179,11 +182,13 @@ int Parser::parseArgListSeq(int index) {
     if (this->isSymbol(tokens[index].string)) {
         int nextIndex = this->parseArgSymbol(index);
 
-        // get symbol from nodeStack, and add it to the parameters of lamdba node
+        // get symbol from nodeStack, and add it to the parameters of lambda node
         string parameter = this->nodeStack.back();
         this->nodeStack.pop_back();
-        static_pointer_cast<LambdaObject>(this->ast.heap.get(this->nodeStack.back()))->addParameter(parameter);
-
+        auto lambdaObjPtr = static_pointer_cast<LambdaObject>(this->ast.heap.get(this->nodeStack.back()));
+        if (!lambdaObjPtr->addParameter(parameter)) {
+            throw runtime_error("two parameter will same name");
+        }
         nextIndex = this->parseArgListSeq(nextIndex);
         return nextIndex;
     } else {
@@ -282,7 +287,17 @@ int Parser::parseSList(int index) {
     parseLog("<SList> → ( ※ <SListSeq> )");
     string quoteType = this->stateStack.empty() ? "" : this->stateStack.back();
     // sListHandle maybe point to quote, unquote, quasiquote object
-    Handle sListHandle = this->ast.heap.makeApplication(this->ast.moduleName, this->nodeStack.back(), quoteType);
+    Handle sListHandle;
+
+    if (quoteType == "QUOTE") {
+        sListHandle = this->ast.heap.makeQuote(this->ast.moduleName, this->nodeStack.back());
+    } else if (quoteType == "QUASIQUOTE") {
+        sListHandle = this->ast.heap.makeQuasiquote(this->ast.moduleName, this->nodeStack.back());
+    } else if (quoteType == "UNQUOTE") {
+        sListHandle = this->ast.heap.makeUnquote(this->ast.moduleName, this->nodeStack.back());
+    } else {
+        sListHandle = this->ast.heap.makeApplication(this->ast.moduleName, this->nodeStack.back());
+    }
 
     this->nodeStack.push_back(sListHandle);
 
@@ -292,7 +307,7 @@ int Parser::parseSList(int index) {
     if (this->tokens[nextIndex].string == ")") {
         return nextIndex + 1;
     } else {
-        throw "<SList> left ) is not found";
+        throw runtime_error("<SList> left ) is not found");
     }
 }
 
@@ -300,8 +315,14 @@ int Parser::parseSListSeq(int index) {
     parseLog("<SListSeq> → <Term> ※ <SListSeq> | ε");
     string quoteType = this->stateStack.empty() ? "" : this->stateStack.back();
 
-    if (index >= this->tokens.size())
+    if (index > this->tokens.size()) {
         throw runtime_error("<SList> left ) is not found");
+    }
+
+    if (index == this->tokens.size() - 1) {
+        string currentTokenStr = this->tokens[index].string;
+        cout << "HI";
+    }
 
     auto currentTokenStr = this->tokens[index].string;
 
@@ -312,11 +333,17 @@ int Parser::parseSListSeq(int index) {
         // Action：从节点栈顶弹出节点，追加到新栈顶节点的children中。
         HandleOrStr childHos = nodeStack.back();
         nodeStack.pop_back();
-        if (quoteType.empty()) {
-            //nodeStack.back() is a handle to application
+
+        if (quoteType == "QUOTE") {
+            static_pointer_cast<QuoteObject>(this->ast.heap.get(this->nodeStack.back()))->addChild(childHos);
+        } else if (quoteType == "QUASIQUOTE") {
+            static_pointer_cast<QuasiquoteObject>(this->ast.heap.get(this->nodeStack.back()))->addChild(childHos);
+        } else if (quoteType == "UNQUOTE") {
+            static_pointer_cast<UnquoteObject>(this->ast.heap.get(this->nodeStack.back()))->addChild(childHos);
+        } else {
             static_pointer_cast<ApplicationObject>(this->ast.heap.get(this->nodeStack.back()))->addChild(childHos);
         }
-        // TODO: nodeStack.back() is a handle to quote, unquote, quasiquoteand
+
         nextIndex = this->parseSListSeq(nextIndex);
         return nextIndex;
     } else {
@@ -364,7 +391,7 @@ int Parser::parseSymbol(int index) {
                 // VARIABLE原样保留，在作用域分析的时候才被录入AST
                 this->nodeStack.push_back(currentTokenStr);
             } else {
-                throw "<Symbol> Illegal symbol";
+                throw runtime_error("<Symbol> Illegal symbol");
             }
         } else {
             if (type == Type::NUMBER) {
@@ -379,12 +406,12 @@ int Parser::parseSymbol(int index) {
                 // VARIABLE原样保留，在作用域分析的时候才被录入AST
                 this->nodeStack.push_back(currentTokenStr);
             } else {
-                throw "<Symbol> Illegal symbol";
+                throw runtime_error("<Symbol> Illegal symbol");
             }
         }
         return index + 1;
     } else {
-        throw "<Symbol> Illegal symbol";
+        throw runtime_error("<Symbol> Illegal symbol");
     }
 }
 
@@ -404,6 +431,20 @@ bool Parser::isSymbol(const string &tokenStr) {
         return true;
     }
 }
+
+void Parser::preProcessAnalysis() {
+    for( auto & [handle, schemeObjPtr] : this->ast.heap.dataMap) {
+        if(schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+            auto applicationObjPtr = static_pointer_cast<QuoteObject>(schemeObjPtr);
+            if (!applicationObjPtr->childrenHoses.empty() and applicationObjPtr->childrenHoses[0] == "import") {
+                cout << handle << endl;
+            }
+        }
+    }
+}
+
+
+
 
 
 #endif //TYPED_SCHEME_PARSER_HPP

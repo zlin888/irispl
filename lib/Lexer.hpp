@@ -68,7 +68,6 @@ namespace Lexer {
                         if (code[i] == '"') {
                             resultStr += code[i];
                             stringMatchFlag = true;
-                            i += 1;
                             break;
                         } else if (code[i] == '\\' && i + 1 < code.size()) {
                             resultStr += code[i] + code[i + 1];

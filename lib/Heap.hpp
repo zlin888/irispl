@@ -28,9 +28,12 @@ public:
 
     Handle makeLambda(const string &prefix, Handle parentHandle);
 
-    Handle makeApplication(const string &prefix, Handle parentHandle, const string &quoteType);
-
     Handle makeString(const string &prefix, string content);
+
+    Handle makeApplication(const string &prefix, Handle parentHandle);
+    Handle makeQuote(const string &prefix, Handle parentHandle);
+    Handle makeUnquote(const string &prefix, Handle parentHandle);
+    Handle makeQuasiquote(const string &prefix, Handle parentHandle);
 };
 
 
@@ -72,23 +75,30 @@ Handle Heap::makeLambda(const string &prefix, Handle parentHandle) {
     return handle;
 }
 
-Handle Heap::makeApplication(const string &prefix, Handle parentHandle, const string &quoteType) {
-    string handle;
-    if (quoteType == "QUOTE") {
-        handle = this->allocateHandle(prefix, SchemeObjectType::QUOTE);
-        this->set(handle, std::shared_ptr<QuoteObject>(new QuoteObject(parentHandle)));
-    } else if (quoteType == "QUASIQUOTE") {
-        handle = this->allocateHandle(prefix, SchemeObjectType::QUASIQUOTE);
-        this->set(handle, std::shared_ptr<QuasiquoteObject>(new QuasiquoteObject(parentHandle)));
-    } else if (quoteType == "UNQUOTE") {
-        handle = this->allocateHandle(prefix, SchemeObjectType::UNQUOTE);
-        this->set(handle, std::shared_ptr<UnquoteObject>(new UnquoteObject(parentHandle)));
-    } else {
-        handle = this->allocateHandle(prefix, SchemeObjectType::APPLICATION);
-        this->set(handle, std::shared_ptr<ApplicationObject>(new ApplicationObject(parentHandle)));
-    }
+Handle Heap::makeApplication(const string &prefix, Handle parentHandle) {
+    string handle = this->allocateHandle(prefix, SchemeObjectType::APPLICATION);
+    this->set(handle, std::shared_ptr<ApplicationObject>(new ApplicationObject(parentHandle)));
     return handle;
 }
+
+Handle Heap::makeQuote(const string &prefix, Handle parentHandle) {
+    string handle = this->allocateHandle(prefix, SchemeObjectType::QUOTE);
+    this->set(handle, std::shared_ptr<QuoteObject>(new QuoteObject(parentHandle)));
+    return handle;
+}
+
+Handle Heap::makeUnquote(const string &prefix, Handle parentHandle) {
+    string handle = this->allocateHandle(prefix, SchemeObjectType::QUOTE);
+    this->set(handle, std::shared_ptr<UnquoteObject>(new UnquoteObject(parentHandle)));
+    return handle;
+}
+
+Handle Heap::makeQuasiquote(const string &prefix, Handle parentHandle) {
+    string handle = this->allocateHandle(prefix, SchemeObjectType::QUOTE);
+    this->set(handle, std::shared_ptr<QuasiquoteObject>(new QuasiquoteObject(parentHandle)));
+    return handle;
+}
+
 
 Handle Heap::makeString(const string &prefix, string content) {
     Handle handle = this->allocateHandle(prefix, SchemeObjectType::STRING);
