@@ -20,15 +20,15 @@ namespace Lexer {
     public:
 
         std::string string;
-        int index;
+        int sourceIndex;
 
-        Token(std::string string, int index) : string(std::move(string)), index(index) {};
+        Token(std::string string, int sourceIndex) : string(std::move(string)), sourceIndex(sourceIndex) {};
 
         friend std::ostream &operator<<(std::ostream &os, const Token &token);
     };
 
     std::ostream &operator<<(std::ostream &os, const Token &token) {
-        os << token.string << " / " << std::to_string(token.index) << "\n";
+        os << token.string << " / " << std::to_string(token.sourceIndex) << "\n";
         return os;
     }
 
@@ -68,7 +68,6 @@ namespace Lexer {
                         if (code[i] == '"') {
                             resultStr += code[i];
                             stringMatchFlag = true;
-                            i += 1;
                             break;
                         } else if (code[i] == '\\' && i + 1 < code.size()) {
                             resultStr += code[i] + code[i + 1];
