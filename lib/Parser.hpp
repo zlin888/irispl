@@ -24,8 +24,76 @@ public:
     string moduleName;
     string source;
     map<Handle, int> nodeSourceIndexes;
+    map<string, string> moduleAliasPathMap;
 
+    Handle getTopApplicationHandle();
+
+    Handle getTopLambdaHandle();
+
+    vector<HandleOrStr> getTopLambdaBodies();
+
+    void mergeAST(AST anotherAST);
 };
+
+Handle AST::getTopApplicationHandle() {
+    // ((lambda () " + code + "))
+    // the first sList
+    Handle topApplicationHandle;
+    for (auto &[handle, schemeObjPtr] : this->heap.dataMap) {
+        if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION &&
+            static_pointer_cast<ApplicationObject>(schemeObjPtr)->parentHandle == TOP_NODE_HANDLE) {
+            topApplicationHandle = handle;
+            break;
+        }
+    }
+    if (topApplicationHandle.empty()) {
+        throw runtime_error("topApplicationHandle not found");
+    }
+    return topApplicationHandle;
+}
+
+
+Handle AST::getTopLambdaHandle() {
+    // ((lambda () " + code + "))
+    // return the first lambda, which is the top lambda
+    return static_pointer_cast<ApplicationObject>(this->heap.get(this->getTopApplicationHandle()))->childrenHoses[0];
+}
+
+vector<HandleOrStr> AST::getTopLambdaBodies() {
+    return static_pointer_cast<LambdaObject>(this->heap.get(getTopApplicationHandle()))->bodies;
+}
+
+void AST::mergeAST(AST anotherAST) {
+
+    this->source = anotherAST.source + "\n" + this->source;
+
+    //Merge
+    for (auto &[handle, schemeObjPtr] : anotherAST.heap.dataMap) {
+        this->heap.set(handle, schemeObjPtr);
+    }
+
+    //the top_node_lambda's body (lambda () (*))
+    //we only need to lambda's body because the top lambda not has any argument
+    vector<HandleOrStr> otherTopLambdaBodies = anotherAST.getTopLambdaBodies();
+
+    //this ast
+    Handle thisTopLambdaHandle = this->getTopLambdaHandle();
+    vector<HandleOrStr> thisTopLambdaBodies = this->getTopLambdaBodies();
+
+    // append the thisTopLambdaBodies to the otherTopLambdaBodies
+    otherTopLambdaBodies.insert(otherTopLambdaBodies.end(), thisTopLambdaBodies.begin(), thisTopLambdaBodies.end());
+
+    static_pointer_cast<LambdaObject>(this->heap.get(this->getTopLambdaHandle()))->setBodies(otherTopLambdaBodies);
+
+    // Now we have, this ((lambda () (other's bodies + this bodies))
+    // Then we need to change other's bodies' handles' parent to thisLambda
+    for (auto &handle : otherTopLambdaBodies) {
+        // only handle exists in the bodies
+        this->heap.get(handle)
+    }
+
+}
+
 
 class Parser {
 public:
@@ -257,7 +325,7 @@ int Parser::parseUnquote(int index) {
     this->parseLog("<Unquote> → , ※1 <UnquoteTerm> ※2");
     // Action1
     this->stateStack.push_back("UNQUOTE");
-    int nextIndex = this->parseUnquoteTerm(index+1);
+    int nextIndex = this->parseUnquoteTerm(index + 1);
     // Action2
     this->stateStack.pop_back();
     return nextIndex;
@@ -272,7 +340,7 @@ int Parser::parseQuasiquote(int index) {
     this->parseLog("<Quasiquote> → ` ※1 <QuasiquoteTerm> ※2");
     // Action1
     this->stateStack.push_back("QUASIQUOTE");
-    int nextIndex = this->parseQuasiquoteTerm(index+1);
+    int nextIndex = this->parseQuasiquoteTerm(index + 1);
     // Action2
     this->stateStack.pop_back();
     return nextIndex;
@@ -317,11 +385,6 @@ int Parser::parseSListSeq(int index) {
 
     if (index > this->tokens.size()) {
         throw runtime_error("<SList> left ) is not found");
-    }
-
-    if (index == this->tokens.size() - 1) {
-        string currentTokenStr = this->tokens[index].string;
-        cout << "HI";
     }
 
     auto currentTokenStr = this->tokens[index].string;
@@ -433,18 +496,31 @@ bool Parser::isSymbol(const string &tokenStr) {
 }
 
 void Parser::preProcessAnalysis() {
-    for( auto & [handle, schemeObjPtr] : this->ast.heap.dataMap) {
-        if(schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
-            auto applicationObjPtr = static_pointer_cast<QuoteObject>(schemeObjPtr);
+    for (auto &[handle, schemeObjPtr] : this->ast.heap.dataMap) {
+        if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+            auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
             if (!applicationObjPtr->childrenHoses.empty() and applicationObjPtr->childrenHoses[0] == "import") {
-                cout << handle << endl;
+                if (applicationObjPtr->childrenHoses.size() != 3) {
+                    throw runtime_error(
+                            "[preprocess] keyword 'import' receives two parameters: module_alias and module_path");
+                } else {
+                    string moduleAlias = applicationObjPtr->childrenHoses[1];
+
+                    Handle modulePathHandle = applicationObjPtr->childrenHoses[2];
+                    auto stringObjptr = this->ast.heap.get(modulePathHandle);
+                    if (stringObjptr->schemeObjectType == SchemeObjectType::STRING) {
+                        string modulePath = static_pointer_cast<StringObject>(stringObjptr)->content;
+                        modulePath = modulePath.substr(1, modulePath.size() - 2); // trim " on both side
+                        this->ast.moduleAliasPathMap[moduleAlias] = modulePath;
+                    } else {
+                        throw runtime_error("[preprocess] module_path should be a string");
+                    }
+                }
             }
+            // TODO: Handle native call here
         }
     }
 }
-
-
-
 
 
 #endif //TYPED_SCHEME_PARSER_HPP

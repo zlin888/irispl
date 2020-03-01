@@ -36,7 +36,6 @@ namespace utils {
         return resultStr;
     }
 
-
 }
 
 #endif //TYPED_SCHEME_UTILS_HPP

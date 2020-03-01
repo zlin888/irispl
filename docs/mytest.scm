@@ -1,5 +1,5 @@
-(import Utils      "/Users/zhitaolin/Local/AuroraScheme/testcase/aurora.test.utils.scm")
-(import ManOrBoy   "/Users/zhitaolin/Local/AuroraScheme/testcase/aurora.test.MoB.scm")
+(import Utils      "/Users/bytedance/CLionProjects/typed-scheme/docs/aurora.test.utils.scm")
+(import ManOrBoy   "/Users/bytedance/CLionProjects/typed-scheme/docs/aurora.test.MoB.scm")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; AuroraScheme测试用例 ;;

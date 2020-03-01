@@ -99,6 +99,8 @@ public:
     bool addParameter(string paramter);
 
     void addBody(HandleOrStr handleOrStr);
+
+    void setBodies(vector<HandleOrStr> hoses);
 };
 
 
@@ -122,6 +124,12 @@ bool LambdaObject::addParameter(string paramter) {
 
 void LambdaObject::addBody(HandleOrStr handleOrStr) {
     this->bodies.push_back(handleOrStr);
+}
+
+void LambdaObject::setBodies(vector<HandleOrStr> newBodies) {
+    this->bodies.clear();
+    this->bodies = newBodies;
+//this.children = this.children.slice(0, 2).concat(bodies);
 }
 
 class QuoteObject : public SchemeObject {
