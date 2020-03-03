@@ -94,9 +94,9 @@ public:
     vector<Handle> parameters;
     SchemeObjectType schemeObjectType = SchemeObjectType::LAMBDA;
 
-    bool hasParameter(string paramter);
+    bool hasParameter(string parameter);
 
-    bool addParameter(string paramter);
+    bool addParameter(string parameter);
 
     void addBody(HandleOrStr handleOrStr);
 
@@ -104,19 +104,19 @@ public:
 };
 
 
-bool LambdaObject::hasParameter(string paramter) {
-    if (find(this->parameters.begin(), this->parameters.end(), paramter) != this->parameters.end()) {
+bool LambdaObject::hasParameter(string parameter) {
+    if (find(this->parameters.begin(), this->parameters.end(), parameter) != this->parameters.end()) {
         return true;
     } else {
         return false;
     }
 }
 
-bool LambdaObject::addParameter(string paramter) {
-    if (this->hasParameter(paramter)) {
+bool LambdaObject::addParameter(string parameter) {
+    if (this->hasParameter(parameter)) {
         return false;
     } else {
-        this->parameters.push_back(paramter);
+        this->parameters.push_back(parameter);
         return true;
     }
 }

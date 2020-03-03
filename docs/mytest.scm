@@ -31,4 +31,4 @@
 (display (value '((1 / 3) - (1 / 4))))
 (define f #f)
 
-(define)
+(define self (lambda (f) f))

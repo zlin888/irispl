@@ -60,6 +60,8 @@ namespace Analyser {
         Handle getParentLambdaHandle(Handle fromHandle);
 
         void scopeAnalyse();
+
+        string makeVariableName(Handle parentLambdaHandle, string variable);
     };
 
     // from this handle, find the lambda that has bounded this variable
@@ -72,8 +74,13 @@ namespace Analyser {
                     return currentHandle;
                 }
             }
+            currentHandle = schemeObjPtr->parentHandle;
         }
         return "";
+    }
+
+    string Analyser::makeVariableName(Handle parentLambdaHandle, string variable) {
+        return parentLambdaHandle.substr(1, parentLambdaHandle.size()) + "." + variable;
     }
 
     // from this lambda handle, find the parent_lambda_handle
@@ -84,6 +91,7 @@ namespace Analyser {
             if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
                 return currentHandle;
             }
+            currentHandle = schemeObjPtr->parentHandle;
         }
         return "";
     }
@@ -95,6 +103,7 @@ namespace Analyser {
     // some.module.name.lambda1.x and some.module.name.lambda12.k
     // noted that k is defined somewhere else, so we need to track the scope of each variable to
     // make sure the name changing is correct
+    // KEEP IN MIND !!!!!!!!!! ONLY LAMBDA AND APPLICATION HAS VARIABLE
     void Analyser::scopeAnalyse() {
         Handle topLambdaHandle = this->ast.getTopLambdaHandle();
 
@@ -103,6 +112,9 @@ namespace Analyser {
             Scope scope;
             scopes[lambdaHandle] = scope;
         }
+
+
+
 
         // 1. init the scopes, scope's parent and children
         // 2. put the defined variable to its corresponding scope
@@ -138,6 +150,32 @@ namespace Analyser {
         }
 
 
+        //change the name of all variable
+        for (auto& handle : this->ast.getHandles()) {
+            shared_ptr<SchemeObject> schemeObjPtr = this->ast.get(handle);
+
+            if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+                auto lambdaObjPtr = static_pointer_cast<LambdaObject>(schemeObjPtr);
+
+                //change the parameter names for lambda
+                //(lambda (x y) (+ x y)) => (lambda (utils.lambda12.x , utils.lambda12.y) (+ x y))
+                for (string &parameter : lambdaObjPtr->parameters) {
+                    string newName = this->makeVariableName(handle, parameter);
+                    parameter = newName;
+                }
+
+                //handle the variable directly exists in lambda
+                //(lambda (k) *k*) => (lambda (k) (utils.lambda12.k))
+                for (HandleOrStr &body : lambdaObjPtr->bodies) {
+                    if(typeOfStr(body) == Type::VARIABLE) {
+                        // TODO handle body is not defined
+                        string newName = this->makeVariableName(this->searchVariableLambdaHandle(body, handle), body);
+                        body = newName;
+                    }
+                }
+
+            }
+        }
     }
 
 
