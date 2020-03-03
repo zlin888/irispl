@@ -33,9 +33,11 @@ map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
 
 class SchemeObject {
 public:
+    SchemeObject(SchemeObjectType schemeObjectType, Handle parentHandle) : schemeObjectType(schemeObjectType), parentHandle(parentHandle) {};
     SchemeObject(SchemeObjectType schemeObjectType) : schemeObjectType(schemeObjectType) {};
 
     SchemeObjectType schemeObjectType;
+    Handle parentHandle;
 
 };
 
@@ -50,7 +52,7 @@ public:
     SchemeObjectType schemeObjectType = SchemeObjectType::CLOSURE;
     Handle selfHandle;
 
-    Closure() : SchemeObject(SchemeObjectType::CLOSURE) {};
+//    Closure() : SchemeObject(SchemeObjectType::CLOSURE) {};
 
     Closure(int instructionAddress, const shared_ptr<Closure> &parentClosurePtr, const Handle &selfHandle)
             : SchemeObject(SchemeObjectType::CLOSURE), instructionAddress(
@@ -73,10 +75,8 @@ public:
 
 class ApplicationObject : public SchemeObject {
 public:
-    ApplicationObject(Handle parentHandle) : SchemeObject(SchemeObjectType::APPLICATION),
-                                             parentHandle(parentHandle) {};
+    ApplicationObject(Handle parentHandle) : SchemeObject(SchemeObjectType::APPLICATION, parentHandle) {};
 
-    Handle parentHandle;
     vector<HandleOrStr> childrenHoses;
     void addChild(HandleOrStr childHos);
 };
@@ -88,8 +88,8 @@ void ApplicationObject::addChild(HandleOrStr childHos) {
 // [lambda, [param0, ... ], body0, ...]
 class LambdaObject : public SchemeObject {
 public:
-    LambdaObject(Handle parentHandle) : SchemeObject(SchemeObjectType::LAMBDA), parentHandle(parentHandle) {};
-    Handle parentHandle;
+    LambdaObject(Handle parentHandle) : SchemeObject(SchemeObjectType::LAMBDA, parentHandle) {};
+
     vector<HandleOrStr> bodies;
     vector<Handle> parameters;
     SchemeObjectType schemeObjectType = SchemeObjectType::LAMBDA;
@@ -134,9 +134,8 @@ void LambdaObject::setBodies(vector<HandleOrStr> newBodies) {
 
 class QuoteObject : public SchemeObject {
 public:
-    QuoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUOTE), parentHandle(parentHandle) {};
-    Handle parentHandle;
-    SchemeObjectType schemeObjectType = SchemeObjectType::QUOTE;
+    QuoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUOTE, parentHandle) {};
+
     vector<HandleOrStr> childrenHoses;
     void addChild(HandleOrStr childHos);
 };
@@ -148,9 +147,8 @@ void QuoteObject::addChild(HandleOrStr childHos) {
 
 class QuasiquoteObject : public SchemeObject {
 public:
-    QuasiquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUASIQUOTE), parentHandle(parentHandle) {};
-    Handle parentHandle;
-    SchemeObjectType schemeObjectType = SchemeObjectType::QUASIQUOTE;
+    QuasiquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUASIQUOTE, parentHandle) {};
+
     vector<HandleOrStr> childrenHoses;
     void addChild(HandleOrStr childHos);
 };
@@ -161,8 +159,8 @@ void QuasiquoteObject::addChild(HandleOrStr childHos) {
 
 class UnquoteObject : public SchemeObject {
 public:
-    UnquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::UNQUOTE), parentHandle(parentHandle) {};
-    Handle parentHandle;
+    UnquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::UNQUOTE, parentHandle) {};
+
     vector<HandleOrStr> childrenHoses;
     void addChild(HandleOrStr childHos);
 };

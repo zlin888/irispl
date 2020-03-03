@@ -30,6 +30,10 @@ public:
 
     Handle getTopLambdaHandle();
 
+    vector<Handle> getLambdaHandles();
+    vector<Handle> getHandles();
+    inline shared_ptr<SchemeObject> get(Handle handle) {return this->heap.get(handle);};
+
     vector<HandleOrStr> getTopLambdaBodies();
 
     void mergeAST(AST anotherAST);
@@ -60,6 +64,7 @@ Handle AST::getTopLambdaHandle() {
 }
 
 vector<HandleOrStr> AST::getTopLambdaBodies() {
+    // return by value !!!!!!!!!!!!!!
     return static_pointer_cast<LambdaObject>(this->heap.get(getTopApplicationHandle()))->bodies;
 }
 
@@ -78,7 +83,7 @@ void AST::mergeAST(AST anotherAST) {
 
     //this ast
     Handle thisTopLambdaHandle = this->getTopLambdaHandle();
-    vector<HandleOrStr> thisTopLambdaBodies = this->getTopLambdaBodies();
+    vector<HandleOrStr> thisTopLambdaBodies = this->getTopLambdaBodies(); // return by value !!!!
 
     // append the thisTopLambdaBodies to the otherTopLambdaBodies
     otherTopLambdaBodies.insert(otherTopLambdaBodies.end(), thisTopLambdaBodies.begin(), thisTopLambdaBodies.end());
@@ -86,12 +91,30 @@ void AST::mergeAST(AST anotherAST) {
     static_pointer_cast<LambdaObject>(this->heap.get(this->getTopLambdaHandle()))->setBodies(otherTopLambdaBodies);
 
     // Now we have, this ((lambda () (other's bodies + this bodies))
-    // Then we need to change other's bodies' handles' parent to thisLambda
+    // Then we need to change other's bodies' handles' parentHandle to thisLambda
     for (auto &handle : otherTopLambdaBodies) {
         // only handle exists in the bodies
-        this->heap.get(handle)
+        this->heap.get(handle)->parentHandle = this->getTopLambdaHandle();
     }
 
+}
+
+vector<Handle> AST::getLambdaHandles() {
+    vector<Handle> result;
+    for (auto &[handle, schemeObjPtr] : this->heap.dataMap) {
+        if(schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+            result.push_back(handle);
+        }
+    }
+    return result;
+}
+
+vector<Handle> AST::getHandles() {
+    vector<Handle> result;
+    for (auto &[handle, _] : this->heap.dataMap) {
+        result.push_back(handle);
+    }
+    return result;
 }
 
 
@@ -418,7 +441,7 @@ int Parser::parseSymbol(int index) {
     string currentTokenStr = tokens[index].string;
     if (isSymbol(currentTokenStr)) {
         // Action
-        string state = this->stateStack.back();
+        string state = this->stateStack.empty() ? "" : this->stateStack.back();
         Type type = typeOfStr(currentTokenStr);
         if (state == "QUOTE" || state == "QUASIQUOTE") {
             // NUMBER and string in quote are not affected
@@ -497,20 +520,27 @@ bool Parser::isSymbol(const string &tokenStr) {
 
 void Parser::preProcessAnalysis() {
     for (auto &[handle, schemeObjPtr] : this->ast.heap.dataMap) {
+        // Handle the import
         if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
             auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
             if (!applicationObjPtr->childrenHoses.empty() and applicationObjPtr->childrenHoses[0] == "import") {
+                // make sure import has more three parameters
                 if (applicationObjPtr->childrenHoses.size() != 3) {
                     throw runtime_error(
                             "[preprocess] keyword 'import' receives two parameters: module_alias and module_path");
                 } else {
+                    // (import Utils handle_to_path->/path/to/module)
+                    //     0     1      2
                     string moduleAlias = applicationObjPtr->childrenHoses[1];
-
                     Handle modulePathHandle = applicationObjPtr->childrenHoses[2];
+
+                    // get the string from handle: handle -> /path/to/module
                     auto stringObjptr = this->ast.heap.get(modulePathHandle);
                     if (stringObjptr->schemeObjectType == SchemeObjectType::STRING) {
                         string modulePath = static_pointer_cast<StringObject>(stringObjptr)->content;
                         modulePath = modulePath.substr(1, modulePath.size() - 2); // trim " on both side
+
+                        // set the alias and the path
                         this->ast.moduleAliasPathMap[moduleAlias] = modulePath;
                     } else {
                         throw runtime_error("[preprocess] module_path should be a string");

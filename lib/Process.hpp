@@ -168,7 +168,7 @@ string Process::dereference(const string &variableName) {
                 string boundVariableValue = closurePtr->getBoundVariable(variableName);
                 if (freeVariableValue != boundVariableValue) {
                     if (closurePtr->isDirtyVairable(variableName)) {
-                        // If set! is used in one of the parent closures to change the variable value in the closure
+                        // If set! is used in one of the parentHandle closures to change the variable value in the closure
                         // where the varaible is bounded, the return variable will refer to the set! value
                         return boundVariableValue;
                     } else {

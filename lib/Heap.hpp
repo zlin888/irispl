@@ -31,8 +31,11 @@ public:
     Handle makeString(const string &prefix, string content);
 
     Handle makeApplication(const string &prefix, Handle parentHandle);
+
     Handle makeQuote(const string &prefix, Handle parentHandle);
+
     Handle makeUnquote(const string &prefix, Handle parentHandle);
+
     Handle makeQuasiquote(const string &prefix, Handle parentHandle);
 };
 

@@ -16,6 +16,7 @@
 #include "Lexer.hpp"
 #include "Parser.hpp"
 #include "Heap.hpp"
+#include "Analyser.hpp"
 
 using namespace std;
 
@@ -59,12 +60,14 @@ private:
     string getModuleName(const string &path);
 
     void topologicSort();
+
+    string getFormattedCode(string path);
 };
 
 
 Module::Module(string path) {
     boost::trim(path);
-    this->importModule(path);
+    this->importModule(path); //Lexer, parser, analyser
 
     this->topologicSort();
 
@@ -72,21 +75,41 @@ Module::Module(string path) {
     // therefore, we need to replace the alias name to its real name,
     // in order to merge all ASTs
     for (auto &[moduleName, currentAST] : allASTs) {
+
         for (auto &[handle, schemeObjPtr] : currentAST.heap.dataMap) {
             // only the children of these two type will be variable
             if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
                 auto lambdaObjPtr = static_pointer_cast<LambdaObject>(schemeObjPtr);
+
             } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
                 auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
-                if(!applicationObjPtr->childrenHoses.empty() && applicationObjPtr->childrenHoses[0] != "import") {
+
+                if (!applicationObjPtr->childrenHoses.empty() && applicationObjPtr->childrenHoses[0] != "import") {
                     // (Application of import does not need to be change name
                     for (HandleOrStr &child : applicationObjPtr->childrenHoses) {
-                        if(typeOfStr(child) == Type::VARIABLE) {
+                        if (typeOfStr(child) == Type::VARIABLE) {
+
+                            // split the variable like 'sort' and 'Utils.sort'
+                            vector<string> fields;
+                            boost::split(fields, child, boost::is_any_of("."));
+
+                            if (fields.size() >= 2) {
+                                // only change the name of variables that look like Utils.sort
+                                string prefix = fields.front(); //Utils
+                                string suffix = boost::join(vector<string>(fields.begin() + 1, fields.end()),
+                                                            ""); // sort
+
+                                if (currentAST.moduleAliasPathMap.count(prefix)) {
+                                    string moduleName = this->getModuleName(currentAST.moduleAliasPathMap[prefix]);
+//                                    this->allASTs[moduleName].heap
+//                                    child = newName; // child is by reference
+                                }
+                            }
                             //only change the name of the variable
                         }
                     }
                 }
-           }
+            }
         }
     }
 
@@ -111,20 +134,14 @@ Module::Module(string path) {
 
 
 void Module::importModule(const string &path) {
-    string code;
-    try {
-        code = utils::readFileToOneString(path);
-    } catch (exception &e) {
-        throw "[ERROR] module " + path + "not found";
-    }
-
-    code = "((lambda () " + code + "))\n";
-
+    string code = this->getFormattedCode(path);
     string moduleName = this->getModuleName(path);
 
     auto tokens = Lexer::lexer(code);
     Parser parser(tokens, moduleName);
     AST currentAST = parser.parse();
+    Analyser::analyse(currentAST);
+
     this->allASTs[moduleName] = currentAST;
 
     for (auto &[dependencyModuleAlias, dependencyModulePath] : currentAST.moduleAliasPathMap) {
@@ -190,6 +207,21 @@ void Module::topologicSort() {
         //add the currentNode to the sorted list
         this->sortedModuleNames.push_back(currentNode);
     }
+}
+
+string Module::getFormattedCode(string path) {
+    string code;
+    // read from file
+    try {
+        code = utils::readFileToOneString(path);
+    } catch (exception &e) {
+        throw "[ERROR] module " + path + "not found";
+    }
+
+    code = "((lambda () " + code + "))\n";
+
+    return code;
+
 }
 
 #endif //TYPED_SCHEME_MODULELOADER_HPP
