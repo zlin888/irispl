@@ -12,34 +12,42 @@
 #include <algorithm>
 #include "Process.hpp"
 
+using namespace std;
+
 typedef string Handle;
 typedef string HandleOrStr;
 
 enum class SchemeObjectType {
-    CLOSURE, STRING, LIST, LAMBDA, APPLICATION, QUOTE, QUASIQUOTE, UNQUOTE, CONTINUATION
+    CLOSURE, STRING, LIST, LAMBDA, APPLICATION, QUOTE, QUASIQUOTE, UNQUOTE, CONTINUATION, SchemeChildrenHosesObject
 };
 
 map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
-        {SchemeObjectType::CLOSURE,      "CLOSURE"},
-        {SchemeObjectType::STRING,       "STRING"},
-        {SchemeObjectType::LIST,         "LIST"},
-        {SchemeObjectType::LAMBDA,       "LAMBDA"},
-        {SchemeObjectType::APPLICATION,  "APPLICATION"},
-        {SchemeObjectType::QUOTE,        "QUOTE"},
-        {SchemeObjectType::UNQUOTE,      "UNQUOTE"},
-        {SchemeObjectType::QUASIQUOTE,   "QUASIQUOTE"},
-        {SchemeObjectType::CONTINUATION, "CONTINUATION"},
+        {SchemeObjectType::CLOSURE,                   "CLOSURE"},
+        {SchemeObjectType::STRING,                    "STRING"},
+        {SchemeObjectType::LIST,                      "LIST"},
+        {SchemeObjectType::LAMBDA,                    "LAMBDA"},
+        {SchemeObjectType::APPLICATION,               "APPLICATION"},
+        {SchemeObjectType::QUOTE,                     "QUOTE"},
+        {SchemeObjectType::UNQUOTE,                   "UNQUOTE"},
+        {SchemeObjectType::QUASIQUOTE,                "QUASIQUOTE"},
+        {SchemeObjectType::CONTINUATION,              "CONTINUATION"},
+        {SchemeObjectType::SchemeChildrenHosesObject, "SchemeChildrenHosesObject"},
 };
 
 class SchemeObject {
 public:
-    SchemeObject(SchemeObjectType schemeObjectType, Handle parentHandle) : schemeObjectType(schemeObjectType), parentHandle(parentHandle) {};
+    SchemeObject(SchemeObjectType schemeObjectType, Handle parentHandle) : schemeObjectType(schemeObjectType),
+                                                                           parentHandle(parentHandle) {};
+
     SchemeObject(SchemeObjectType schemeObjectType) : schemeObjectType(schemeObjectType) {};
 
     SchemeObjectType schemeObjectType;
     Handle parentHandle;
 
+    static std::vector<HandleOrStr> &getChildrenHoses(shared_ptr<SchemeObject> schemeObjPtr);
 };
+
+
 
 class Closure : public SchemeObject {
 public:
@@ -78,6 +86,7 @@ public:
     ApplicationObject(Handle parentHandle) : SchemeObject(SchemeObjectType::APPLICATION, parentHandle) {};
 
     vector<HandleOrStr> childrenHoses;
+
     void addChild(HandleOrStr childHos);
 };
 
@@ -252,6 +261,16 @@ Type typeOfStr(const string &inputStr) {
         return Type::NUMBER;
     } else {
         return Type::VARIABLE;
+    }
+}
+
+std::vector<HandleOrStr> &SchemeObject::getChildrenHoses(shared_ptr<SchemeObject> schemeObjPtr) {
+    if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+        return static_pointer_cast<ApplicationObject>(schemeObjPtr)->childrenHoses;
+    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE) {
+        return static_pointer_cast<UnquoteObject>(schemeObjPtr)->childrenHoses;
+    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE) {
+        return static_pointer_cast<UnquoteObject>(schemeObjPtr)->childrenHoses;
     }
 }
 

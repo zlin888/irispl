@@ -31,4 +31,5 @@
 (display (value '((1 / 3) - (1 / 4))))
 (define f #f)
 
-(define self (lambda (f) f))
+(define self (lambda (f) (+ f Utils.s)))
+;; (define self (lambda (f) NoModule.s))

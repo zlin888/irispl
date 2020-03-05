@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <vector>
+#include "SchemeObject.hpp"
 
 using namespace std;
 
@@ -35,6 +36,8 @@ namespace utils {
 
         return resultStr;
     }
+
+
 
 }
 

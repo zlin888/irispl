@@ -25,6 +25,8 @@ public:
     string source;
     map<Handle, int> nodeSourceIndexes;
     map<string, string> moduleAliasPathMap;
+    map<string, string> natives; // Not supported yet
+
 
     Handle getTopApplicationHandle();
 

@@ -7,6 +7,7 @@
 
 #include "SchemeObject.hpp"
 #include "Parser.hpp"
+#include "Utils.hpp"
 #include <map>
 #include <set>
 
@@ -62,6 +63,8 @@ namespace Analyser {
         void scopeAnalyse();
 
         string makeVariableName(Handle parentLambdaHandle, string variable);
+
+        bool isNativeOrImportVariable(string variable);
     };
 
     // from this handle, find the lambda that has bounded this variable
@@ -96,6 +99,17 @@ namespace Analyser {
         return "";
     }
 
+    bool Analyser::isNativeOrImportVariable(string variable) {
+        vector<string> fields;
+        boost::split(fields, variable, boost::is_any_of("."));
+        string variablePrefix = fields[0];
+        if (!this->ast.natives.count(variablePrefix) &&
+            !this->ast.moduleAliasPathMap.count(variablePrefix)) {
+            return false;
+        }
+        return true;
+    }
+
     // make sure each variable has its globally unique name
     // therefore, we need check where does each variable defined, that is the scope
     // with scope, we know where the variable is belong to so that we can change the name
@@ -113,9 +127,6 @@ namespace Analyser {
             scopes[lambdaHandle] = scope;
         }
 
-
-
-
         // 1. init the scopes, scope's parent and children
         // 2. put the defined variable to its corresponding scope
         for (auto handle : this->ast.getHandles()) {
@@ -130,6 +141,10 @@ namespace Analyser {
                     this->scopes[parentHandle].addChild(handle);
                 } else {
                     scopes[handle].parentHandle = TOP_NODE_HANDLE;
+                }
+                // add the parameters to the lambda bounded variables set
+                for (string parameter : static_pointer_cast<LambdaObject>(schemeObjPtr)->parameters) {
+                    scopes[handle].boundVariables.insert(parameter);
                 }
             } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
                 auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
@@ -151,7 +166,7 @@ namespace Analyser {
 
 
         //change the name of all variable
-        for (auto& handle : this->ast.getHandles()) {
+        for (auto &handle : this->ast.getHandles()) {
             shared_ptr<SchemeObject> schemeObjPtr = this->ast.get(handle);
 
             if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
@@ -167,13 +182,49 @@ namespace Analyser {
                 //handle the variable directly exists in lambda
                 //(lambda (k) *k*) => (lambda (k) (utils.lambda12.k))
                 for (HandleOrStr &body : lambdaObjPtr->bodies) {
-                    if(typeOfStr(body) == Type::VARIABLE) {
+                    if (typeOfStr(body) == Type::VARIABLE) {
                         // TODO handle body is not defined
-                        string newName = this->makeVariableName(this->searchVariableLambdaHandle(body, handle), body);
-                        body = newName;
+                        Handle boundLambdaHandle = this->searchVariableLambdaHandle(body, handle);
+                        //Can't find the lambda which bounds this variable
+                        //Variable is not defined or is defined in other module (Utils.max_number)
+                        if (boundLambdaHandle.empty()) {
+                            if (!this->isNativeOrImportVariable(body)) {
+                                throw std::runtime_error("[scope analysis] variable " + body + " is not defined");
+                            }
+                        } else {
+                            string newName = this->makeVariableName(boundLambdaHandle, body);
+                            body = newName;
+                        }
                     }
                 }
 
+            } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION ||
+                       schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE ||
+                       schemeObjPtr->schemeObjectType == SchemeObjectType::QUASIQUOTE) {
+
+                auto childrenHoses = SchemeObject::getChildrenHoses(schemeObjPtr);
+
+                // change the variable name in application, unquote and quasiquote
+                // firstly, pass some special APPLICATION!o!
+                if (childrenHoses.empty() || childrenHoses[0] == "native" || childrenHoses[0] == "import") {
+                    continue;
+                }
+
+                for (HandleOrStr &hos : childrenHoses) {
+                    if (typeOfStr(hos) == Type::VARIABLE) {
+                        // find the bounded lambda
+                        Handle boundLambdaHandle = this->searchVariableLambdaHandle(hos, handle);
+                        if (boundLambdaHandle.empty()) {
+                            if (!this->isNativeOrImportVariable(hos)) {
+                                throw std::runtime_error("[scope analysis] variable " + hos + " is not defined");
+                            }
+                        } else {
+                            string newName = this->makeVariableName(boundLambdaHandle, hos);
+                            hos = newName;
+                        }
+                    }
+
+                }
             }
         }
     }
