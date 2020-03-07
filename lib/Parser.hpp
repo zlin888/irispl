@@ -35,6 +35,8 @@ public:
     // Fort the definedVar Origin Name is unique, but for other variables,
     // origin name could be duplicated, and this is exactly why we need unique name
     map<string, string> definedVarOriginUniqueNameMap;
+    vector<Handle> lambdaHandles;
+    vector<Handle> tailcalls;
 
 
     Handle getTopApplicationHandle();
@@ -114,26 +116,56 @@ void AST::mergeAST(AST anotherAST) {
     this->heap.deleteHandle(anotherAST.getTopLambdaHandle());
     this->heap.deleteHandle(anotherAST.getTopApplicationHandle());
 
-    for(auto [source, index] : this->nodeSourceIndexesMap) {
+    // the heap have been merge, but not the other fields of ast
+    // merge each field one by one
+    for (auto[source, index] : this->nodeSourceIndexesMap) {
         this->nodeSourceIndexesMap[source] = index + anotherAST.source.size() + 1;
     }
 
-    for(auto &[source, index] : anotherAST.nodeSourceIndexesMap) {
+    for (auto[source, index] : anotherAST.nodeSourceIndexesMap) {
         this->nodeSourceIndexesMap[source] = index;
     }
 
+    for (auto lambdaHandle : anotherAST.getLambdaHandles()) {
+        if (lambdaHandle != anotherAST.getTopLambdaHandle()) {
+            this->lambdaHandles.push_back(lambdaHandle);
+        }
+    }
+
+    for (auto handle : anotherAST.tailcalls) {
+        if (handle != anotherAST.getTopApplicationHandle()) {
+            this->tailcalls.push_back(handle);
+        }
+    }
+
+    for (auto[unique, origin]: anotherAST.varUniqueOriginNameMap) {
+        this->varUniqueOriginNameMap[unique] = origin;
+    }
+
+    for (auto[origin, unique] : anotherAST.definedVarOriginUniqueNameMap) {
+        this->definedVarOriginUniqueNameMap[origin] = unique;
+    }
+
+    for (auto[alias, path] : anotherAST.moduleAliasPathMap) {
+        this->moduleAliasPathMap[alias] = path;
+    }
+
+    for (auto[s1, s2] : anotherAST.natives) {
+        this->natives[s1] = s2;
+    }
 
 
 }
 
 vector<Handle> AST::getLambdaHandles() {
-    vector<Handle> result;
-    for (auto &[handle, schemeObjPtr] : this->heap.dataMap) {
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
-            result.push_back(handle);
+    if (this->lambdaHandles.empty()) {
+        for (auto &[handle, schemeObjPtr] : this->heap.dataMap) {
+            if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+                this->lambdaHandles.push_back(handle);
+            }
         }
     }
-    return result;
+    return this->lambdaHandles;
 }
 
 vector<Handle> AST::getHandles() {
@@ -580,8 +612,15 @@ void Parser::preProcessAnalysis() {
                         throw runtime_error("[preprocess] module_path should be a string");
                     }
                 }
+            } else if (!applicationObjPtr->childrenHoses.empty() and applicationObjPtr->childrenHoses[0] == "native") {
+                if (applicationObjPtr->childrenHoses.size() < 2) {
+                    throw runtime_error("[preprocess] keyword 'native' has less than 2 variable");
+                } else {
+                    string native = applicationObjPtr->childrenHoses[1];
+                    this->ast.natives[native] = "enabled";
+                    // TODO: how to define native call?
+                }
             }
-            // TODO: Handle native call here
         }
     }
 }
