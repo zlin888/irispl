@@ -32,7 +32,9 @@ public:
     map<string, string> moduleAliasPathMap;
     map<string, string> natives; // Not supported yet
     map<string, string> varUniqueOriginNameMap;
-    map<string, string> definedVarUniqueOriginNameMap;
+    // Fort the definedVar Origin Name is unique, but for other variables,
+    // origin name could be duplicated, and this is exactly why we need unique name
+    map<string, string> definedVarOriginUniqueNameMap;
 
 
     Handle getTopApplicationHandle();

@@ -68,6 +68,8 @@ public:
 //    static void analyse(AST &ast);
 
     static AST analyse(AST ast);
+
+    void tailCallAnalyse();
 };
 
 // from this handle, find the lambda that has bounded this variable
@@ -241,21 +243,25 @@ void Analyser::scopeAnalyse() {
                 string uniqueName = childrenHoses[1];
                 string originName = this->ast.varUniqueOriginNameMap[uniqueName];
 
-                if(this->ast.definedVarUniqueOriginNameMap.count(uniqueName)) {
+                if(this->ast.definedVarOriginUniqueNameMap.count(originName)) {
                     throw std::runtime_error("[scope analysis] define variable " + originName + " repeatedly");
                 }
                 else {
-                    this->ast.definedVarUniqueOriginNameMap[uniqueName] = originName;
+                    this->ast.definedVarOriginUniqueNameMap[originName] = uniqueName;
                 }
             }
         }
     }
 }
 
+void Analyser::tailCallAnalyse() {
+
+}
 
 AST Analyser::analyse(AST ast) {
     Analyser analyser(ast);
     analyser.scopeAnalyse();
+    // TODO: tail call analyse
     return analyser.ast;
 }
 

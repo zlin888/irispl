@@ -57,7 +57,7 @@ public:
 private:
     void importModule(const string &path);
 
-    string getModuleName(const string &path);
+    static string getModuleNameFromPath(const string &path);
 
     void topologicSort();
 
@@ -74,6 +74,7 @@ Module::Module(string path) {
     // when using (import utils "path/to/utils"), we use utils to refer to the scm file in that path
     // therefore, we need to replace the alias name to its real name,
     // in order to merge all ASTs
+    // example: utils.increase -> path.to.utils.increase
     for (auto &[moduleName, currentAST] : allASTs) {
 
         for (auto &[handle, schemeObjPtr] : currentAST.heap.dataMap) {
@@ -95,14 +96,15 @@ Module::Module(string path) {
 
                             if (fields.size() >= 2) {
                                 // only change the name of variables that look like Utils.sort
-                                string prefix = fields.front(); //Utils
+                                string prefix = fields.front(); //Utils, which is the alias name of the module
                                 string suffix = boost::join(vector<string>(fields.begin() + 1, fields.end()),
-                                                            ""); // sort
+                                                            "."); // sort
 
                                 if (currentAST.moduleAliasPathMap.count(prefix)) {
-                                    string moduleName = this->getModuleName(currentAST.moduleAliasPathMap[prefix]);
-//                                    this->allASTs[moduleName].heap
-//                                    child = newName; // child is by reference
+                                    string moduleName = this->getModuleNameFromPath(
+                                            currentAST.moduleAliasPathMap[prefix]);
+                                    string uniqueName = this->allASTs[moduleName].definedVarOriginUniqueNameMap[suffix];
+                                    child = uniqueName;
                                 }
                             }
                             //only change the name of the variable
@@ -113,20 +115,6 @@ Module::Module(string path) {
         }
     }
 
-//    let mergedModule: Module = new Module();
-//    let mainModuleQualifiedName = PathUtils.GetModuleQualifiedName(path);
-//    mergedModule.AST = allASTs.get(mainModuleQualifiedName);
-//    // 按照依赖关系图的拓扑排序进行融合
-//    // NOTE 由于AST融合是将被融合（依赖）的部分放在前面，所以这里需要逆序进行
-//    for(let i = sortedModuleNames.length - 1; i >= 0; i--) {
-//        let moduleName = sortedModuleNames[i];
-//        if(moduleName === mainModuleQualifiedName) continue;
-//        mergedModule.AST.MergeAST(allASTs.get(moduleName), "top");
-//    }
-//    // 编译
-//    mergedModule.ILCode = Compile(mergedModule.AST);
-
-    // mergedModule.Components = sortedModuleNames;
 
 //    return mergedModule;
 
@@ -135,7 +123,7 @@ Module::Module(string path) {
 
 void Module::importModule(const string &path) {
     string code = this->getFormattedCode(path);
-    string moduleName = this->getModuleName(path);
+    string moduleName = this->getModuleNameFromPath(path);
 
     AST currentAST;
 
@@ -145,17 +133,19 @@ void Module::importModule(const string &path) {
     this->allASTs[moduleName] = currentAST;
 
     for (auto &[dependencyModuleAlias, dependencyModulePath] : currentAST.moduleAliasPathMap) {
-        this->dependencies.push_back(make_pair(moduleName, getModuleName(dependencyModulePath)));
+        this->dependencies.push_back(make_pair(moduleName, getModuleNameFromPath(dependencyModulePath)));
         this->importModule(dependencyModulePath);
     }
 
     // topologic sort the imported module in dependencies, can put the result to this->sortedModuleName
 }
 
-string Module::getModuleName(const string &path) {
-//    vector<string> fields = utils::split(path, regex(R"([/\\\\])"));
+string Module::getModuleNameFromPath(const string &path) {
+    // get the last field in the path like /path/to/file
+    // example: ../docs/mytest.scm -> mytest.scm
     vector<string> fields;
     boost::split(fields, path, boost::is_any_of("\\/"));
+
     string moduleName;
     if (!fields.empty()) {
         moduleName = fields.back();

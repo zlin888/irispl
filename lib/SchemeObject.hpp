@@ -269,9 +269,10 @@ std::vector<HandleOrStr> &SchemeObject::getChildrenHoses(shared_ptr<SchemeObject
         return static_pointer_cast<ApplicationObject>(schemeObjPtr)->childrenHoses;
     } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE) {
         return static_pointer_cast<UnquoteObject>(schemeObjPtr)->childrenHoses;
-    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE) {
+    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUASIQUOTE) {
         return static_pointer_cast<UnquoteObject>(schemeObjPtr)->childrenHoses;
     }
+    throw std::runtime_error("[getChildrenHoses] not a application, unquote or quasiquote");
 }
 
 
