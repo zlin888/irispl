@@ -112,6 +112,9 @@ void Module::importModule(const string &path) {
 }
 
 void Module::makeImportedNameUnique() {
+    // difference between this and scope analysis:
+    // scope analysis only handles the non-imported variable
+    // this only handles the imported variable
 
     // when using (import utils "path/to/utils"), we use utils to refer to the scm file in that path
     // therefore, we need to replace the alias name to its real name,
