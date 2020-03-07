@@ -181,10 +181,11 @@ void Analyser::scopeAnalyse() {
             //(lambda (x y) (+ x y)) => (lambda (utils.lambda12.x , utils.lambda12.y) (+ x y))
             for (string &parameter : lambdaObjPtr->parameters) {
                 string uniqueName = this->makeUniqueVariableName(handle, parameter);
+                string originName = parameter;
                 parameter = uniqueName;
 
                 // TODO: Do I need to make a deep copy here??
-                this->ast.varUniqueOriginNameMap[uniqueName] = parameter;
+                this->ast.varUniqueOriginNameMap[uniqueName] = originName;
             }
 
             //handle the variable directly exists in lambda
@@ -201,9 +202,10 @@ void Analyser::scopeAnalyse() {
                         }
                     } else {
                         string uniqueName = this->makeUniqueVariableName(boundLambdaHandle, body);
+                        string originName = body;
                         body = uniqueName;
 
-                        this->ast.varUniqueOriginNameMap[uniqueName] = body;
+                        this->ast.varUniqueOriginNameMap[uniqueName] = originName;
                     }
                 }
             }
@@ -231,8 +233,9 @@ void Analyser::scopeAnalyse() {
                         }
                     } else {
                         string uniqueName = this->makeUniqueVariableName(boundLambdaHandle, hos);
+                        string originName = hos;
                         hos = uniqueName;
-                        this->ast.varUniqueOriginNameMap[uniqueName] = hos;
+                        this->ast.varUniqueOriginNameMap[uniqueName] = originName;
                     }
                 }
             }
