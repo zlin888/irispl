@@ -32,7 +32,7 @@ namespace Lexer {
         return os;
     }
 
-    std::vector<Token> lexer(std::string code) {
+    std::vector<Token> tokenize(std::string code) {
         // TODO: deal with escaped chars
         code = code + "\n";
 
