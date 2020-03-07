@@ -137,10 +137,10 @@ void Module::importModule(const string &path) {
     string code = this->getFormattedCode(path);
     string moduleName = this->getModuleName(path);
 
-    auto tokens = Lexer::lexer(code);
-    Parser parser(tokens, moduleName);
-    AST currentAST = parser.parse();
-    Analyser::analyse(currentAST);
+    AST currentAST;
+
+    currentAST = Parser::parse(Lexer::tokenize(code), moduleName);
+    currentAST = Analyser::analyse(currentAST);
 
     this->allASTs[moduleName] = currentAST;
 

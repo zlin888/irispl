@@ -20,12 +20,19 @@ public:
     AST() {};
 
     AST(const string &source, string &moduleName) : source(source), moduleName(moduleName) {};
+
+//    //Copy constructor, remember to change it when changing the fields list
+//    AST(const AST &ast);
+
+
     Heap heap;
     string moduleName;
     string source;
     map<Handle, int> nodeSourceIndexes;
     map<string, string> moduleAliasPathMap;
     map<string, string> natives; // Not supported yet
+    map<string, string> varUniqueOriginNameMap;
+    map<string, string> definedVarUniqueOriginNameMap;
 
 
     Handle getTopApplicationHandle();
@@ -33,8 +40,10 @@ public:
     Handle getTopLambdaHandle();
 
     vector<Handle> getLambdaHandles();
+
     vector<Handle> getHandles();
-    inline shared_ptr<SchemeObject> get(Handle handle) {return this->heap.get(handle);};
+
+    inline shared_ptr<SchemeObject> get(Handle handle) { return this->heap.get(handle); };
 
     vector<HandleOrStr> getTopLambdaBodies();
 
@@ -104,7 +113,7 @@ void AST::mergeAST(AST anotherAST) {
 vector<Handle> AST::getLambdaHandles() {
     vector<Handle> result;
     for (auto &[handle, schemeObjPtr] : this->heap.dataMap) {
-        if(schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
             result.push_back(handle);
         }
     }
@@ -119,6 +128,10 @@ vector<Handle> AST::getHandles() {
     return result;
 }
 
+//AST::AST(const AST &ast) : heap(ast.heap), moduleName(ast.moduleName), source(ast.source),
+//                           nodeSourceIndexes(ast.nodeSourceIndexes), moduleAliasPathMap(ast.moduleAliasPathMap),
+//                           natives(ast.natives), varUniqueOriginNameMap(ast.varUniqueOriginNameMap),
+//                           definedVarUniqueOriginNameMap(ast.definedVarUniqueOriginNameMap) {}
 
 class Parser {
 public:
@@ -129,14 +142,14 @@ public:
     AST ast;
     vector<Lexer::Token> tokens;
 
-    AST parse();
-
     int parseTerm(int index);
 
     Parser(const vector<Lexer::Token> &tokens, const string &moduleName) : tokens(tokens) {
         this->nodeStack.push_back(TOP_NODE_HANDLE);
         this->ast.moduleName = moduleName;
     }
+
+    static AST parse(const vector<Lexer::Token> &tokens, const string &moduleName);
 
     void parseLog(const string &msg);
 
@@ -175,13 +188,15 @@ public:
     int parseSListSeq(int index);
 
     void preProcessAnalysis();
+
 };
 
 
-AST Parser::parse() {
-    this->parseTerm(0);
-    this->preProcessAnalysis();
-    return this->ast;
+AST Parser::parse(const vector<Lexer::Token> &tokens, const string &moduleName) {
+    Parser parser(tokens, moduleName);
+    parser.parseTerm(0);
+    parser.preProcessAnalysis();
+    return parser.ast;
 }
 
 int Parser::parseTerm(int index) {

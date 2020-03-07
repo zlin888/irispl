@@ -274,4 +274,5 @@ std::vector<HandleOrStr> &SchemeObject::getChildrenHoses(shared_ptr<SchemeObject
     }
 }
 
+
 #endif //TYPED_SCHEME_SCHEMEOBJECT_HPP

@@ -15,7 +15,7 @@ TEST_CASE("Lexer Test", "[LexerTests]") {
     string lexerInput = readFileToOneString(pathToTestFiles + "lexer-test-input.txt");
     vector<Lexer::Token> expectedTokens = readExpectedOutput(pathToTestFiles + "lexer-test-output.txt");
 
-    auto tokens = Lexer::lexer(lexerInput);
+    auto tokens = Lexer::tokenize(lexerInput);
 
     REQUIRE(!tokens.empty());
 
