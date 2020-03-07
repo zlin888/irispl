@@ -18,6 +18,8 @@ public:
 
     bool hasHandle(Handle handle);
 
+    void deleteHandle(Handle handle);
+
     shared_ptr<SchemeObject> get(Handle handle);
 
     void set(Handle handle, shared_ptr<SchemeObject> schemeObjectPtr);
@@ -42,6 +44,10 @@ public:
 
 bool Heap::hasHandle(Handle handle) {
     return this->dataMap.count(handle);
+}
+
+void Heap::deleteHandle(Handle handle) {
+    this->dataMap.erase(handle);
 }
 
 std::shared_ptr<SchemeObject> Heap::get(Handle handle) {

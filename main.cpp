@@ -11,7 +11,10 @@ int main() {
 
     // the executable file located in cmake-build-debug
     ModuleLoader moduleLoader("../docs/ILCode-test.txt");
-    Module module("../docs/mytest.scm");
+    Module::loadModule("../docs/mytest.scm");
+
+
+
     Process process0 = runtime.createProcess(moduleLoader);
 
     runtime.addProcess(process0);

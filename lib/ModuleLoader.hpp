@@ -46,13 +46,15 @@ class Module {
 public:
     string AVM_Version = "V0"; // AVM version that is used
     // public Components: Array<string>;    // 组成该模块的各个依赖模块名称的拓扑排序序列
-    //    public AST: AST;
+    AST ast;
     vector<string> ILCode;
     map<string, AST> allASTs;
     vector<pair<string, string>> dependencies;
     vector<string> sortedModuleNames;
 
-    explicit Module(string path);
+    Module() {};
+
+    static Module loadModule(string path);
 
 private:
     void importModule(const string &path);
@@ -64,16 +66,28 @@ private:
     string getFormattedCode(string path);
 
     void makeImportedNameUnique();
+
 };
 
 
-Module::Module(string path) {
+Module Module::loadModule(string path) {
     boost::trim(path);
-    this->importModule(path); //Lexer, parser, analyser
-    this->topologicSort();
-    this->makeImportedNameUnique();
+    Module module;
+    module.importModule(path); //Lexer, parser, analyser
+    module.topologicSort();
+    module.makeImportedNameUnique();
 
-//    return mergedModule;
+    Module mergeModule;
+    mergeModule.ast = module.allASTs[Module::getModuleNameFromPath(path)];
+
+    // -1 to skip the last module
+    // the top module, the module that you run, is always the last module in the sorted list
+    for (int i = 0; i < module.sortedModuleNames.size() - 1; i++) {
+        string moduleName = module.sortedModuleNames[i];
+        mergeModule.ast.mergeAST(module.allASTs[moduleName]);
+    }
+
+    return mergeModule;
 
 }
 
@@ -84,7 +98,7 @@ void Module::importModule(const string &path) {
 
     AST currentAST;
 
-    currentAST = Parser::parse(Lexer::tokenize(code), moduleName);
+    currentAST = Parser::parse(Lexer::tokenize(code), moduleName, code);
     currentAST = Analyser::analyse(currentAST);
 
     this->allASTs[moduleName] = currentAST;
@@ -136,13 +150,15 @@ void Module::makeImportedNameUnique() {
                             if (currentAST.moduleAliasPathMap.count(prefix)) {
                                 string moduleName = this->getModuleNameFromPath(
                                         currentAST.moduleAliasPathMap[prefix]);
-                                if(this->allASTs[moduleName].definedVarOriginUniqueNameMap.count(suffix)) {
+                                if (this->allASTs[moduleName].definedVarOriginUniqueNameMap.count(suffix)) {
                                     // find the unique name of this imported variable
                                     string uniqueName = this->allASTs[moduleName].definedVarOriginUniqueNameMap[suffix];
                                     hos = uniqueName;
                                 } else {
                                     // cannot find the unique name of this imported variable
-                                    throw std::runtime_error("[module loader] imported variable " + hos + " in module " + astModuleName + " is not defined in " + moduleName);
+                                    throw std::runtime_error(
+                                            "[module loader] imported variable " + hos + " in module " + astModuleName +
+                                            " is not defined in " + moduleName);
                                 }
                             }
                         }
