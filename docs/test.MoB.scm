@@ -1,4 +1,4 @@
-(import Utils "/Users/bytedance/CLionProjects/typed-scheme/docs/aurora.test.utils.scm")
+(import Utils "/Users/bytedance/CLionProjects/typed-scheme/docs/test.utils.scm")
 
 (define A
   (lambda (k x1 x2 x3 x4 x5)
