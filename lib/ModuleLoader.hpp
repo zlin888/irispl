@@ -17,14 +17,12 @@
 #include "Parser.hpp"
 #include "Heap.hpp"
 #include "Analyser.hpp"
+#include "Compiler.hpp"
 
 using namespace std;
 
 class ModuleLoader {
 public:
-    string AVM_Version = "V0"; // AVM version that is used
-    // public Components: Array<string>;    // 组成该模块的各个依赖模块名称的拓扑排序序列
-    //        public AST: AST;
     vector<string> ILCode;
 
     explicit ModuleLoader(const string &path);
@@ -44,10 +42,8 @@ ModuleLoader::ModuleLoader(const string &path) {
 
 class Module {
 public:
-    string AVM_Version = "V0"; // AVM version that is used
-    // public Components: Array<string>;    // 组成该模块的各个依赖模块名称的拓扑排序序列
     AST ast;
-    vector<string> ILCode;
+    vector<Instruction> ILCode;
     map<string, AST> allASTs;
     vector<pair<string, string>> dependencies;
     vector<string> sortedModuleNames;
@@ -86,6 +82,8 @@ Module Module::loadModule(string path) {
         string moduleName = module.sortedModuleNames[i];
         mergeModule.ast.mergeAST(module.allASTs[moduleName]);
     }
+
+    mergeModule.ILCode = Compiler::compile(mergeModule.ast);
 
     return mergeModule;
 

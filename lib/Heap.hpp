@@ -54,7 +54,7 @@ std::shared_ptr<SchemeObject> Heap::get(Handle handle) {
     if (this->hasHandle(handle)) {
         return this->dataMap[handle];
     } else {
-        throw std::out_of_range("[ERROR] handle holds nothing -- Heap::get");
+        throw std::runtime_error("[ERROR] handle holds nothing -- Heap::get");
     }
 }
 

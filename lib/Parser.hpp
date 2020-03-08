@@ -304,6 +304,7 @@ int Parser::parseLambda(int index) {
     this->nodeStack.push_back(lambdaHandle);
 
     ast.nodeSourceIndexesMap[lambdaHandle] = this->tokens[index].sourceIndex;
+    ast.lambdaHandles.push_back(lambdaHandle);
 
     int nextIndex = this->parseArgList(index + 2);
     nextIndex = this->parseBody(nextIndex);
@@ -568,7 +569,7 @@ int Parser::parseSymbol(int index) {
 }
 
 void Parser::parseLog(const string &msg) {
-    cout << msg << endl;
+//    cout << msg << endl;
 }
 
 bool Parser::isSymbol(const string &tokenStr) {

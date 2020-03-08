@@ -11,7 +11,7 @@ int main() {
 
     // the executable file located in cmake-build-debug
     ModuleLoader moduleLoader("../docs/ILCode-test.txt");
-    Module::loadModule("../docs/mytest.scm");
+    Module module = Module::loadModule("../docs/mytest.scm");
 
 
 
