@@ -28,7 +28,7 @@ public:
     Heap heap;
     string moduleName;
     string source;
-    map<Handle, int> nodeSourceIndexesMap;
+    map<Handle, int> handleSourceIndexesMap;
     map<string, string> moduleAliasPathMap;
     map<string, string> natives; // Not supported yet
     map<string, string> varUniqueOriginNameMap;
@@ -47,12 +47,27 @@ public:
 
     vector<Handle> getHandles();
 
-    inline shared_ptr<SchemeObject> get(Handle handle) { return this->heap.get(handle); };
-
     vector<HandleOrStr> getTopLambdaBodies();
 
     void mergeAST(AST anotherAST);
+
+    shared_ptr<SchemeObject> get(Handle handle);
+
+    bool hasNative(string nativeCall);
 };
+
+shared_ptr<SchemeObject> AST::get(Handle handle) {
+    try {
+        return this->heap.get(handle);
+    } catch (exception &e){
+        int index = this->handleSourceIndexesMap[handle];
+        int left = index - 10 >= 0 ? index - 10 : 0;
+        int right = index + 10 < this->source.size() ? index + 10 : this->source.size() - 1;
+        cout << to_string(index) << endl;
+        cout << this->source.substr(left, right) << endl;
+        throw e;
+    }
+}
 
 Handle AST::getTopApplicationHandle() {
     // ((lambda () " + code + "))
@@ -80,7 +95,8 @@ Handle AST::getTopLambdaHandle() {
 
 vector<HandleOrStr> AST::getTopLambdaBodies() {
     // return by value !!!!!!!!!!!!!!
-    return static_pointer_cast<LambdaObject>(this->heap.get(getTopApplicationHandle()))->bodies;
+//    return static_pointer_cast<LambdaObject>(this->heap.get(getTopApplicationHandle()))->bodies;
+    return static_pointer_cast<LambdaObject>(this->heap.get(this->getTopLambdaHandle()))->bodies;
 }
 
 void AST::mergeAST(AST anotherAST) {
@@ -96,8 +112,8 @@ void AST::mergeAST(AST anotherAST) {
     // the top_node_lambda's body (lambda () (*))
     // we only need to lambda's body because the top lambda not has any argument
     vector<HandleOrStr> anotherTopLambdaBodies = anotherAST.getTopLambdaBodies();
+    Handle anotherTopLambdaHandle = anotherAST.getTopLambdaHandle();
 
-    Handle thisTopLambdaHandle = this->getTopLambdaHandle();
     vector<HandleOrStr> thisTopLambdaBodies = this->getTopLambdaBodies(); // return by value !!!!
 
     // append the thisTopLambdaBodies to the otherTopLambdaBodies
@@ -118,12 +134,12 @@ void AST::mergeAST(AST anotherAST) {
 
     // the heap have been merge, but not the other fields of ast
     // merge each field one by one
-    for (auto[source, index] : this->nodeSourceIndexesMap) {
-        this->nodeSourceIndexesMap[source] = index + anotherAST.source.size() + 1;
+    for (auto[source, index] : this->handleSourceIndexesMap) {
+        this->handleSourceIndexesMap[source] = index + anotherAST.source.size() + 1;
     }
 
-    for (auto[source, index] : anotherAST.nodeSourceIndexesMap) {
-        this->nodeSourceIndexesMap[source] = index;
+    for (auto[source, index] : anotherAST.handleSourceIndexesMap) {
+        this->handleSourceIndexesMap[source] = index;
     }
 
     for (auto lambdaHandle : anotherAST.getLambdaHandles()) {
@@ -174,6 +190,19 @@ vector<Handle> AST::getHandles() {
         result.push_back(handle);
     }
     return result;
+}
+
+bool AST::hasNative(string nativeCall) {
+    // split the variable like 'native' and 'native.sort'
+    vector<string> fields;
+    boost::split(fields, nativeCall, boost::is_any_of("."));
+
+    if(!fields.empty()) {
+        return this->natives.count(fields[0]);
+    } else {
+        return false;
+    }
+
 }
 
 //AST::AST(const AST &ast) : heap(ast.heap), moduleName(ast.moduleName), source(ast.source),
@@ -303,7 +332,7 @@ int Parser::parseLambda(int index) {
     Handle lambdaHandle = this->ast.heap.makeLambda(this->ast.moduleName, this->nodeStack.back());
     this->nodeStack.push_back(lambdaHandle);
 
-    ast.nodeSourceIndexesMap[lambdaHandle] = this->tokens[index].sourceIndex;
+    ast.handleSourceIndexesMap[lambdaHandle] = this->tokens[index].sourceIndex;
     ast.lambdaHandles.push_back(lambdaHandle);
 
     int nextIndex = this->parseArgList(index + 2);
@@ -363,7 +392,6 @@ int Parser::parseBody(int index) {
     parseLog("<Body> → <BodyTerm> ※ <Body_>");
     int nextIndex = this->parseBodyTerm(index);
 
-    // Action：从节点栈顶弹出节点，追加到新栈顶Lambda节点的body中。
     HandleOrStr bodyHos = this->nodeStack.back();
     this->nodeStack.pop_back();
     static_pointer_cast<LambdaObject>(this->ast.heap.get(this->nodeStack.back()))->addBody(bodyHos);
@@ -379,7 +407,6 @@ int Parser::parseBodyTail(int index) {
         currentToken == "`" || isSymbol(currentToken)) {
         int nextIndex = this->parseBodyTerm(index);
 
-        // Action：从节点栈顶弹出节点，追加到新栈顶Lambda节点的body中。
         HandleOrStr bodyHos = this->nodeStack.back();
         this->nodeStack.pop_back();
         static_pointer_cast<LambdaObject>(this->ast.heap.get(this->nodeStack.back()))->addBody(bodyHos);
@@ -459,7 +486,7 @@ int Parser::parseSList(int index) {
 
     this->nodeStack.push_back(sListHandle);
 
-    ast.nodeSourceIndexesMap[sListHandle] = this->tokens[index].sourceIndex;
+    ast.handleSourceIndexesMap[sListHandle] = this->tokens[index].sourceIndex;
     int nextIndex = this->parseSListSeq(index + 1);
 
     if (this->tokens[nextIndex].string == ")") {
@@ -517,7 +544,7 @@ int Parser::parseSymbol(int index) {
             } else if (type == Type::STRING) {
                 Handle stringHandle = this->ast.heap.makeString(this->ast.moduleName, currentTokenStr);
                 this->nodeStack.push_back(stringHandle);
-                this->ast.nodeSourceIndexesMap[stringHandle] = tokens[index].sourceIndex;
+                this->ast.handleSourceIndexesMap[stringHandle] = tokens[index].sourceIndex;
             } else if (type == Type::SYMBOL) {
                 this->nodeStack.push_back(currentTokenStr);
             } else if ((type == Type::VARIABLE || type == Type::KEYWORD || type == Type::PORT) &&
@@ -539,7 +566,7 @@ int Parser::parseSymbol(int index) {
             } else if (type == Type::STRING) {
                 Handle stringHandle = this->ast.heap.makeString(this->ast.moduleName, currentTokenStr);
                 this->nodeStack.push_back(stringHandle);
-                this->ast.nodeSourceIndexesMap[stringHandle] = tokens[index].sourceIndex;
+                this->ast.handleSourceIndexesMap[stringHandle] = tokens[index].sourceIndex;
             } else if (type == Type::VARIABLE || type == Type::KEYWORD || type == Type::BOOLEAN || type == Type::PORT) {
                 // VARIABLE原样保留，在作用域分析的时候才被录入AST
                 this->nodeStack.push_back(currentTokenStr);
@@ -552,7 +579,7 @@ int Parser::parseSymbol(int index) {
             } else if (type == Type::STRING) {
                 Handle stringHandle = this->ast.heap.makeString(this->ast.moduleName, currentTokenStr);
                 this->nodeStack.push_back(stringHandle);
-                this->ast.nodeSourceIndexesMap[stringHandle] = tokens[index].sourceIndex;
+                this->ast.handleSourceIndexesMap[stringHandle] = tokens[index].sourceIndex;
             } else if (type == Type::SYMBOL) {
                 this->nodeStack.push_back(currentTokenStr);
             } else if (type == Type::VARIABLE || type == Type::KEYWORD || type == Type::BOOLEAN || type == Type::PORT) {

@@ -29,6 +29,10 @@ public:
     void beginCompile();
 
     void compileLambda(Handle lambdaHandle);
+
+    void compileApplication(Handle handle);
+
+    void compileQuasiquote(Handle handle);
 };
 
 vector<Instruction> Compiler::compile(AST ast) {
@@ -67,17 +71,24 @@ void Compiler::compileLambda(Handle lambdaHandle) {
             auto schemeObjPtr = this->ast.get(body);
             SchemeObjectType schemeObjectType = schemeObjPtr->schemeObjectType;
 
-            if(schemeObjectType == SchemeObjectType::LAMBDA) {
+            if (schemeObjectType == SchemeObjectType::LAMBDA) {
                 this->addInstruction("loadclosure @" + body);
-            } else if(schemeObjectType == SchemeObjectType::QUOTE) {
-                this->addInstruction("push " + body);
-            } else if(schemeObjectType == SchemeObjectType::QUASIQUOTE) {
-
-            } else if(schemeObjectType == SchemeObjectType::STRING) {
-
-            } else if(schemeObjectType == SchemeObjectType::APPLICATION || schemeObjectType == SchemeObjectType::UNQUOTE) {
-
+            } else if (schemeObjectType == SchemeObjectType::QUASIQUOTE) {
+                this->compileQuasiquote(body);
+            } else if (schemeObjectType == SchemeObjectType::APPLICATION ||
+                       schemeObjectType == SchemeObjectType::UNQUOTE) {
+                this->compileApplication(body);
             }
+        } else if (this->ast.hasNative(body)) {
+            this->addInstruction("push " + body);
+        } else if (bodyType == Type::VARIABLE) {
+            this->addInstruction("load " + body);
+        } else if (bodyType == Type::UNDEFINED) {
+            throw std::runtime_error("[compileLambda] lambda body '" + body + "'type is undefined")
+        } else {
+            // TYPE is number || boolean || symbol || string ||keyword || port || quote
+            this->addInstruction("load " + body);
+
         }
 //        if(typeOfStr(hos) == Type::VARIABLE) {
 //            if(i == lambdaObjPtr->bodies.size() - 1) {
@@ -86,6 +97,15 @@ void Compiler::compileLambda(Handle lambdaHandle) {
 //        }
     }
 }
+
+void Compiler::compileApplication(Handle handle) {
+
+}
+
+void Compiler::compileQuasiquote(Handle handle) {
+
+}
+
 
 void Compiler::beginCompile() {
     this->addInstruction(";; IrisCompiler GOGOGO");
@@ -96,8 +116,7 @@ void Compiler::beginCompile() {
     for (auto lambdaHandle : this->ast.getLambdaHandles()) {
         this->compileLambda(lambdaHandle);
     }
-
-
 }
+
 
 #endif //TYPED_SCHEME_COMPILER_HPP
