@@ -43,6 +43,8 @@ public:
     void ailAdd();
 
     void ailDisplay();
+
+    void aliLoadClosure();
 };
 
 
@@ -179,6 +181,34 @@ void Runtime::ailLoad() {
     } else {
         throw std::invalid_argument("[ERROR] load argument is not a variable : aliLoad");
     }
+}
+
+void Runtime::aliLoadClosure() {
+    Instruction instruction = this->currentProcessPtr->currentInstruction();
+    if (instruction.argumentType == InstructionArgumentType::LABEL) {
+        string label = instruction.argument;
+
+    } else {
+        throw std::invalid_argument("[ERROR] loadclosure argument is not a label: aliLoadClosure");
+    }
+//    let argType = TypeOfToken(argument);
+//
+//    if(argType !== 'LABEL') { throw `[Error] loadclosure指令参数类型不是标签`; }
+
+//    let label = argument;
+//    let instAddress = PROCESS.GetLabelAddress(label);
+//    let newClosureHandle = PROCESS.NewClosure(instAddress, PROCESS.currentClosureHandle);
+//    let currentClosure = PROCESS.GetCurrentClosure();
+//    for(let v in currentClosure.freeVariables) {
+//        let value = currentClosure.GetFreeVariable(v);
+//        PROCESS.GetClosure(newClosureHandle).InitFreeVariable(v, value);
+//    }
+//    for(let v in currentClosure.boundVariables) {
+//        let value = currentClosure.GetBoundVariable(v);
+//        PROCESS.GetClosure(newClosureHandle).InitFreeVariable(v, value);
+//    }
+//    PROCESS.PushOperand(newClosureHandle);
+//    PROCESS.Step();
 }
 
 void Runtime::ailPush() {

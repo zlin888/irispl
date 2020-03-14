@@ -33,6 +33,10 @@ public:
     void compileApplication(Handle handle);
 
     void compileQuasiquote(Handle handle);
+
+    void addComment(string inst);
+
+    void compileDefine(Handle handle);
 };
 
 vector<Instruction> Compiler::compile(AST ast) {
@@ -51,6 +55,16 @@ void Compiler::addInstruction(string inst) {
         this->ILCode.push_back(instruction);
     } else {
         this->ILCode.push_back(instruction);
+    }
+}
+
+void Compiler::addComment(string inst) {
+    boost::trim(inst);
+    Instruction instruction(inst);
+    if (inst.empty()) {
+        return;
+    } else {
+        this->addInstruction(";; " + inst);
     }
 }
 
@@ -84,21 +98,46 @@ void Compiler::compileLambda(Handle lambdaHandle) {
         } else if (bodyType == Type::VARIABLE) {
             this->addInstruction("load " + body);
         } else if (bodyType == Type::UNDEFINED) {
-            throw std::runtime_error("[compileLambda] lambda body '" + body + "'type is undefined")
+            throw std::runtime_error("[compileLambda] lambda body '" + body + "'type is undefined");
         } else {
             // TYPE is number || boolean || symbol || string ||keyword || port || quote
             this->addInstruction("load " + body);
-
         }
-//        if(typeOfStr(hos) == Type::VARIABLE) {
-//            if(i == lambdaObjPtr->bodies.size() - 1) {
-//                this->addInstruction("store " + hos);
-//            }
-//        }
     }
+
+    this->addInstruction("return");
 }
 
 void Compiler::compileApplication(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+
+    this->addComment(handle);
+
+    auto childrenHoses =  applicationPtr->childrenHoses;
+
+    if(childrenHoses.empty()) {
+        return;
+    }
+
+    string first = childrenHoses[0];
+    if(first == "import")       { return; }
+    else if(first == "native")  { return; }
+//    else if(first == "call/cc") { return CompileCallCC(nodeHandle); }
+    else if(first == "define")  { return this->compileDefine(handle); }
+//    else if(first == "set!")    { return CompileSet(nodeHandle); }
+//    else if(first == "cond")    { return CompileCond(nodeHandle);}
+//    else if(first == "if")      { return CompileIf(nodeHandle);}
+//    else if(first == "and")     { return CompileAnd(nodeHandle);}
+//    else if(first == "or")      { return CompileOr(nodeHandle);}
+//    else if(first == "fork")    { AddInstruction(`fork ${children[1]}`); return;
+
+
+}
+
+void Compiler::compileDefine(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+
+    this->addComment("compileDefine"+ handle);
 
 }
 
@@ -115,6 +154,10 @@ void Compiler::beginCompile() {
     // ( (lambda () ( bodies ) )
     for (auto lambdaHandle : this->ast.getLambdaHandles()) {
         this->compileLambda(lambdaHandle);
+    }
+
+    for (auto &inst : this->ILCode) {
+        cout << inst.instructionStr << endl;
     }
 }
 
