@@ -93,7 +93,7 @@ void Compiler::compileLambda(Handle lambdaHandle) {
                        schemeObjectType == SchemeObjectType::UNQUOTE) {
                 this->compileApplication(body);
             }
-        } else if (this->ast.hasNative(body)) {
+        } else if (this->ast.isNativeCall(body)) {
             this->addInstruction("push " + body);
         } else if (bodyType == Type::VARIABLE) {
             this->addInstruction("load " + body);
@@ -111,19 +111,17 @@ void Compiler::compileLambda(Handle lambdaHandle) {
 void Compiler::compileApplication(Handle handle) {
     shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
 
-    this->addComment(handle);
+    auto childrenHoses = applicationPtr->childrenHoses;
 
-    auto childrenHoses =  applicationPtr->childrenHoses;
-
-    if(childrenHoses.empty()) {
+    if (childrenHoses.empty()) {
         return;
     }
 
     string first = childrenHoses[0];
-    if(first == "import")       { return; }
-    else if(first == "native")  { return; }
+    if (first == "import") { return; }
+    else if (first == "native") { return; }
 //    else if(first == "call/cc") { return CompileCallCC(nodeHandle); }
-    else if(first == "define")  { return this->compileDefine(handle); }
+    else if (first == "define") { return this->compileDefine(handle); }
 //    else if(first == "set!")    { return CompileSet(nodeHandle); }
 //    else if(first == "cond")    { return CompileCond(nodeHandle);}
 //    else if(first == "if")      { return CompileIf(nodeHandle);}
@@ -137,7 +135,46 @@ void Compiler::compileApplication(Handle handle) {
 void Compiler::compileDefine(Handle handle) {
     shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
 
-    this->addComment("compileDefine"+ handle);
+    auto childrenHoses = applicationPtr->childrenHoses;
+
+    if (childrenHoses.size() != 3) {
+        throw std::runtime_error("[compileDefine] define " + handle + " should have only two children");
+    }
+
+    if (typeOfStr(childrenHoses[1]) != Type::VARIABLE) {
+        throw std::runtime_error(
+                "[compileDefine] define's first argument " + childrenHoses[1] + " should be a variable");
+    }
+
+    if (typeOfStr(childrenHoses[2]) == Type::HANDLE) {
+        auto schemeObjPtr = this->ast.get(childrenHoses[2]);
+
+        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+            this->addInstruction("push @" + childrenHoses[2]); // go to the label
+        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUOTE) {
+            this->addInstruction("push " + childrenHoses[2]);
+        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUASIQUOTE) {
+            this->compileQuasiquote(childrenHoses[2]);
+        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::STRING) {
+            this->addInstruction("push " + childrenHoses[2]);
+        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION ||
+                   schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE) {
+            this->compileApplication(childrenHoses[2]);
+        } else {
+            throw std::runtime_error("[compileDefine] define's second argument " + childrenHoses[2] + " is invalid");
+        }
+    } else if (utils::makeSet<Type>(4, Type::NUMBER, Type::BOOLEAN, Type::KEYWORD, Type::PORT).count(
+            typeOfStr(childrenHoses[2])) || this->ast.isNativeCall(childrenHoses[2])) {
+        this->addInstruction("push " + childrenHoses[2]);
+    } else if (typeOfStr(childrenHoses[2]) == Type::VARIABLE) {
+        this->addInstruction("load " + childrenHoses[2]);
+    } else {
+        throw std::runtime_error("[compileDefine] define's second argument " + childrenHoses[2] + " is invalid");
+    }
+
+    // store
+    this->addInstruction("store " + childrenHoses[1]);
+
 
 }
 

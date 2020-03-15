@@ -53,7 +53,7 @@ public:
 
     shared_ptr<SchemeObject> get(Handle handle);
 
-    bool hasNative(string nativeCall);
+    bool isNativeCall(string nativeCall);
 };
 
 shared_ptr<SchemeObject> AST::get(Handle handle) {
@@ -192,7 +192,7 @@ vector<Handle> AST::getHandles() {
     return result;
 }
 
-bool AST::hasNative(string nativeCall) {
+bool AST::isNativeCall(string nativeCall) {
     // split the variable like 'native' and 'native.sort'
     vector<string> fields;
     boost::split(fields, nativeCall, boost::is_any_of("."));
