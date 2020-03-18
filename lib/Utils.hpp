@@ -49,10 +49,7 @@ namespace utils {
         }
         va_end(ap);
         return std::move(aSet);
-
-
     }
-
 
 }
 

@@ -37,7 +37,7 @@ public:
     vector<string> opStack;
     vector<StackFrame> fStack;
     vector<Instruction> instructions;
-    map<string, int> labelLineMap;
+    map<string, int> labelAddressMap;
     ProcessState state = ProcessState::READY;
     Heap heap;
     PID pid = 0;
@@ -84,7 +84,7 @@ void Process::initLabelLineMap() {
     for (int i = 0; i < this->instructions.size(); ++i) {
         Instruction instruction = this->instructions[i];
         if (instruction.type == InstructionType::LABEL) {
-            this->labelLineMap[instruction.instructionStr] = i;
+            this->labelAddressMap[instruction.instructionStr] = i;
         }
     }
 }

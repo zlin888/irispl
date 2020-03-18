@@ -45,6 +45,10 @@ public:
     void ailDisplay();
 
     void aliLoadClosure();
+
+    void ailCall(const Instruction &instruction, bool isTailCall);
+
+    void ailTailCall(const Instruction &instruction);
 };
 
 
@@ -118,6 +122,8 @@ void Runtime::execute() {
                 this->ailLoad();
             } else if (mnemonic == "call") {
                 this->ailCall(instruction);
+            } else if (mnemonic == "tailcall") {
+                this->ailTailCall(instruction);
             } else if (mnemonic == "push") {
                 this->ailPush();
             } else if (mnemonic == "return") {
@@ -126,8 +132,7 @@ void Runtime::execute() {
                 this->ailHalt();
             } else if (mnemonic == "add") {
                 ailAdd();
-            }
-            else {
+            } else {
                 this->currentProcessPtr->step();
             }
         } catch (exception &e) {
@@ -222,23 +227,25 @@ void Runtime::ailPush() {
 //=================================================================
 
 void Runtime::ailCall(const Instruction &instruction) {
-    // TODO : argument type is not label neither variable;
+    this->ailCall(instruction, false);
+}
 
+void Runtime::ailCall(const Instruction &instruction, bool isTailCall) {
     // Push the current closure to the fstack for storage, it will be reused after "return" of the new function
 
     //  arg[0] == '@' : LABEL
     if (instruction.argumentType == InstructionArgumentType::LABEL) {
 
-        this->currentProcessPtr->pushStackFrame(this->currentProcessPtr->currentClosurePtr,
-                                                this->currentProcessPtr->PC + 1);
+        if (!isTailCall) {
+            this->currentProcessPtr->pushStackFrame(this->currentProcessPtr->currentClosurePtr,
+                                                    this->currentProcessPtr->PC + 1);
+        }
 
-        int callInstructionAddress = this->currentProcessPtr->labelLineMap[instruction.argument];
+        int callInstructionAddress = this->currentProcessPtr->labelAddressMap[instruction.argument];
         string label = instruction.argument;
 
         // create a new closure for the function execution
         Handle newClosureHandle = this->currentProcessPtr->newClosure(callInstructionAddress);
-//        this->currentProcessPtr->currentClosurePtr->setFreeVariable("jack", "12", false);
-//        this->currentProcessPtr->currentClosurePtr->setBoundVariable("ijack", "88", false);
 
         // Copy the bound and free variables from the current closure to the new closure
         auto freeVariables = this->currentProcessPtr->currentClosurePtr->freeVariables;
@@ -255,8 +262,24 @@ void Runtime::ailCall(const Instruction &instruction) {
 
         // Set the current closure to the new closure and then head to the new function's instructions
         this->currentProcessPtr->setCurrentClosure(newClosureHandle);
-        int instructionAddress = this->currentProcessPtr->labelLineMap[label];
+        int instructionAddress = this->currentProcessPtr->labelAddressMap[label];
         this->currentProcessPtr->gotoAddress(instructionAddress);
+
+    } else if (instruction.argumentType == InstructionArgumentType::HANDLE) {
+
+        if (!isTailCall) {
+            this->currentProcessPtr->pushStackFrame(this->currentProcessPtr->currentClosurePtr,
+                                                    this->currentProcessPtr->PC + 1);
+        }
+
+        Handle handle = instruction.argument;
+        shared_ptr<SchemeObject> schemeObjPtr = this->currentProcessPtr->heap.get(handle);
+
+        if (schemeObjPtr->schemeObjectType == SchemeObjectType::CLOSURE) {
+            auto closurePtr = static_pointer_cast<Closure>(schemeObjPtr);
+            this->currentProcessPtr->setCurrentClosure(handle);
+            this->currentProcessPtr->gotoAddress(closurePtr->instructionAddress);
+        }
 
     } else if (instruction.argumentType == InstructionArgumentType::VARIABLE) {
         // TODO native calls
@@ -268,6 +291,11 @@ void Runtime::ailCall(const Instruction &instruction) {
     } else {
         throw std::runtime_error("[ERROR] call's argument must be handle, label, or variable : Runtime::ailCall");
     }
+}
+
+void Runtime::ailTailCall(const Instruction &instruction) {
+    this->ailCall(instruction, true);
+
 }
 
 void Runtime::ailReturn() {
@@ -316,4 +344,5 @@ void Runtime::ailDisplay() {
         }
     }
 }
+
 #endif // !RUNTIME_HPP
