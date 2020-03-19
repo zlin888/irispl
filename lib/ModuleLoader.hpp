@@ -78,7 +78,8 @@ Module Module::loadModule(string path) {
 
     // -1 to skip the last module
     // the top module, the module that you run, is always the last module in the sorted list
-    for (int i = 0; i < module.sortedModuleNames.size() - 1; i++) {
+    int k = module.sortedModuleNames.size() - 1;
+    for (int i = 0; i < k; i++) {
         string moduleName = module.sortedModuleNames[i];
         mergeModule.ast.mergeAST(module.allASTs[moduleName]);
     }

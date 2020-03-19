@@ -216,17 +216,18 @@ void Compiler::compileComplexApplication(Handle handle) {
 
     string uniqueStr = this->makeUniqueString();
 
-    string entryLabel = "@ENTRY_LABEL_" + uniqueStr;
+    string entryLabel = "@COMPLEX_APP_" + uniqueStr;
     this->addInstruction("goto " + entryLabel);
 
     // ------------------------------------------------------- TMP LAMBDA ----------------------------
     // a temporary lambda function (lambda (F x y ..) (F x y ..))
-    string tmpLambdaLabel = "@TMP_LAMBDA_LABEL_" + uniqueStr;
+    string tmpLambdaLabel = "@TMP_LAMBDA_" + uniqueStr;
     this->addInstruction(tmpLambdaLabel);
 
     vector<string> tmpLambdaParams;
-    for (auto childrenHos : childrenHoses) {
-        tmpLambdaParams.push_back(childrenHos);
+    for (int i = 0; i < childrenHoses.size(); ++i) {
+        tmpLambdaParams.push_back("TEMP_LAMBDA_PARAM" + to_string(i) + "_" + uniqueStr);
+
     }
 
     for (int i = childrenHoses.size() - 1; i >= 0; --i) {
@@ -246,8 +247,8 @@ void Compiler::compileComplexApplication(Handle handle) {
     this->addInstruction(entryLabel);
 
     // Compile : (tmp_lambda A 1 2 ..)
-    for (auto childrenHose : childrenHoses) {
-        this->compileHos(childrenHose);
+    for (auto childrenHos : childrenHoses) {
+        this->compileHos(childrenHos);
     }
 
     // call the tmp lambda
