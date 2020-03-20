@@ -59,6 +59,16 @@ public:
     string makeUniqueString();
 
     void compileHos(HandleOrStr hos);
+
+    void compileSet(Handle handle);
+
+    void compileCond(Handle handle);
+
+    void compileIf(Handle handle);
+
+    void compileAnd(Handle handle);
+
+    void compileOr(Handle handle);
 };
 
 vector<Instruction> Compiler::compile(AST ast) {
@@ -151,11 +161,11 @@ void Compiler::compileApplication(Handle handle) {
     else if (first == "native") { return; }
 //    else if(first == "call/cc") { return CompileCallCC(nodeHandle); }
     else if (first == "define") { return this->compileDefine(handle); }
-//    else if(first == "set!")    { return CompileSet(nodeHandle); }
-//    else if(first == "cond")    { return CompileCond(nodeHandle);}
-//    else if(first == "if")      { return CompileIf(nodeHandle);}
-//    else if(first == "and")     { return CompileAnd(nodeHandle);}
-//    else if(first == "or")      { return CompileOr(nodeHandle);}
+    else if (first == "set!") { return this->compileSet(handle); }
+    else if (first == "cond") { return this->compileCond(handle); }
+    else if (first == "if") { return this->compileIf(handle); }
+    else if(first == "and")     { return this->compileAnd(handle);}
+    else if(first == "or")      { return this->compileOr(handle);}
 //    else if(first == "fork")    { AddInstruction(`fork ${children[1]}`); return;
 
     if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::APPLICATION) {
@@ -184,20 +194,18 @@ void Compiler::compileApplication(Handle handle) {
         } else if (std::find(this->ast.tailcalls.begin(), this->ast.tailcalls.end(), handle) !=
                    this->ast.tailcalls.end()) {
             // we don't has tailcalls right now
-            if(firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
+            if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
                 this->addInstruction("tailcall " + first);
-            }
-            else if(firstType == Type::VARIABLE) {
+            } else if (firstType == Type::VARIABLE) {
                 // include native
                 this->addInstruction("tailcall " + first);
             } else {
                 throw std::runtime_error("[compileApplication] the first argument is not callable.");
             }
         } else {
-            if(firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
+            if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
                 this->addInstruction("call " + first);
-            }
-            else if(firstType == Type::VARIABLE) {
+            } else if (firstType == Type::VARIABLE) {
                 // include native
                 this->addInstruction("call " + first);
             } else {
@@ -303,7 +311,201 @@ void Compiler::compileDefine(Handle handle) {
 }
 
 void Compiler::compileQuasiquote(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+    auto childrenHoses = applicationPtr->childrenHoses;
 
+    for (int i = 0; i < childrenHoses.size(); ++i) {
+        HandleOrStr child = childrenHoses[i];
+        this->compileHos(child);
+    }
+
+    this->addInstruction("push " + to_string(childrenHoses.size()));
+    this->addInstruction("concat");
+
+}
+
+void Compiler::compileSet(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+
+    auto childrenHoses = applicationPtr->childrenHoses;
+
+    if (childrenHoses.size() != 3) {
+        throw std::runtime_error("[compileSet] set " + handle + " should have only two children");
+    }
+
+    // push or load
+    string rightHos = childrenHoses[2];
+    this->compileHos(rightHos);
+
+    //set
+    string leftHos = childrenHoses[1];
+    Type leftHosType = typeOfStr(leftHos);
+
+    if (leftHosType == Type::VARIABLE) {
+        this->addInstruction("set " + leftHos);
+    } else {
+        throw std::runtime_error("[compileSet] set's first argument " + leftHos + " should be a variable");
+    }
+}
+
+void Compiler::compileCond(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+
+    auto childrenHoses = applicationPtr->childrenHoses;
+
+    string uniqueStr = this->makeUniqueString();
+
+    for (int i = 1; i < childrenHoses.size(); ++i) {
+        shared_ptr<ApplicationObject> clausePtr = static_pointer_cast<ApplicationObject>(
+                this->ast.get(childrenHoses[i]));
+
+        this->addInstruction("@COND_BRANCH_" + uniqueStr + "_" + to_string(i));
+
+        HandleOrStr predicate = clausePtr->childrenHoses[0];
+
+        if (predicate != "else") {
+            Type predicateType = typeOfStr(predicate);
+            if (predicateType == Type::HANDLE) {
+                auto predicateObjPtr = this->ast.get(predicate);
+                if (predicateObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+                    this->compileApplication(predicate);
+                } else {
+                    // push all, for other situation
+                    this->addInstruction("push " + predicate);
+                }
+            } else {
+                // for other situation where predicate is not HANDLE!!
+                this->compileHos(predicate);
+            }
+            // Handle if predicate is false
+            if (i == childrenHoses.size() - 1) {
+                // go to the end, if i is the last branch
+                this->addInstruction("iffalse @COND_END_" + uniqueStr);
+            } else {
+                // go to the next branch
+                this->addInstruction("iffalse @COND_BRANCH_" + uniqueStr + "_" + to_string(i + 1));
+            }
+        }
+
+        HandleOrStr branchBody = clausePtr->childrenHoses[1];
+        this->compileHos(branchBody);
+
+        if (predicate == "else" || i == childrenHoses.size() - 1) {
+            this->addInstruction("@COND_END_" + uniqueStr);
+            break; // ignore every branch behind else branch
+        } else {
+            this->addInstruction("goto @COND_END_" + uniqueStr);
+        }
+
+    }
+
+}
+
+void Compiler::compileIf(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+    auto childrenHoses = applicationPtr->childrenHoses;
+
+    if (childrenHoses.size() != 4) {
+        throw std::runtime_error("[compileIf] if " + handle + " should have four children");
+    }
+
+    HandleOrStr predicate = childrenHoses[1];
+    Type predicateType = typeOfStr(predicate);
+    if (predicateType == Type::HANDLE) {
+        auto predicateObjPtr = this->ast.get(predicate);
+        if (predicateObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+            this->compileApplication(predicate);
+        } else {
+            // push all, for other situation
+            this->addInstruction("push " + predicate);
+        }
+    } else {
+        // for other situation where predicate is not HANDLE!!
+        this->compileHos(predicate);
+    }
+
+    string uniqueStr = this->makeUniqueString();
+    string trueLabel = "@IF_TRUE_" + uniqueStr;
+    string endLabel = "@IF_END_" + uniqueStr;
+
+    this->addInstruction("iftrue " + trueLabel); // if true go to trueLabel
+
+    // ----- False Branch ------
+    HandleOrStr falseBranch = childrenHoses[3];
+    this->compileHos(falseBranch);
+
+    this->addInstruction("goto " + endLabel); // false branch done here
+    // ----- False Branch ------
+
+    // ----- True Branch -------
+    this->addInstruction(trueLabel);
+
+    HandleOrStr trueBranch = childrenHoses[3];
+    this->compileHos(trueBranch);
+    // ----- True Branch -------
+
+    this->addInstruction(endLabel);
+
+}
+
+void Compiler::compileAnd(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+    auto childrenHoses = applicationPtr->childrenHoses;
+
+    if (childrenHoses.size() > 3) {
+        throw std::runtime_error("[compileAnd] " + handle + " should have more than three children");
+    }
+    
+    string uniqueStr = this->makeUniqueString();
+    string endLabel = "@AND_END_" + uniqueStr;
+    string falseLabel = "@AND_FALSE_" + uniqueStr;
+
+    for (int i = 1; i < childrenHoses.size(); ++i) {
+        HandleOrStr child = childrenHoses[i];
+        this->compileHos(child);
+
+        this->addInstruction("iffalse " + falseLabel);
+    }
+
+    //True
+    this->addInstruction("push #t");
+    this->addInstruction("goto " + endLabel);
+
+    //False
+    this->addInstruction(falseLabel);
+    this->addInstruction("push #f");
+
+    this->addInstruction(endLabel);
+}
+
+void Compiler::compileOr(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+    auto childrenHoses = applicationPtr->childrenHoses;
+
+    if (childrenHoses.size() > 3) {
+        throw std::runtime_error("[compileAnd] " + handle + " should have more than three children");
+    }
+
+    string uniqueStr = this->makeUniqueString();
+    string endLabel = "@OR_END_" + uniqueStr;
+    string trueLabel = "@OR_TRUE_" + uniqueStr;
+
+    for (int i = 1; i < childrenHoses.size(); ++i) {
+        HandleOrStr child = childrenHoses[i];
+        this->compileHos(child);
+
+        this->addInstruction("iftrue" + trueLabel);
+    }
+
+    // False
+    this->addInstruction("push #f");
+    this->addInstruction("goto " + endLabel);
+
+    // True
+    this->addInstruction(trueLabel);
+    this->addInstruction("push #t");
+
+    this->addInstruction(endLabel);
 }
 
 string Compiler::makeUniqueString() {

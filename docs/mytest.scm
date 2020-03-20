@@ -30,6 +30,9 @@
 
 (display (value '((1 / 3) - (1 / 4))))
 (define f #f)
+(define hello
+  (lambda (num)
+    (if (= num 12) 24 77)))
 
 ;; (define self (lambda (f) (+ f Utils.s)))
 ;; (define self (lambda (f) NoModule.s))
