@@ -16,7 +16,7 @@
 using namespace std;
 
 namespace utils {
-    bool log_flag = True;
+    bool log_flag = true;
 
     inline std::string trim(const std::string &s) {
         auto wsfront = std::find_if_not(s.begin(), s.end(), [](int c) { return std::isspace(c); });

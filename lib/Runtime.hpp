@@ -454,35 +454,119 @@ void Runtime::ailPow() {
 }
 
 void Runtime::ailEqn() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
 
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(
+                std::fabs(stod(operand1) - stod(operand2)) <= std::numeric_limits<double>::epsilon() ? "#t" : "#f");
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
 }
 
+// >=
 void Runtime::ailGe() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
+
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(
+                stod(operand1) >= stod(operand2) ? "#t" : "#f");
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
 
 }
 
 void Runtime::ailLe() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
+
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(
+                stod(operand1) <= stod(operand2) ? "#t" : "#f");
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
 
 }
 
 void Runtime::ailGt() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
+
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(
+                stod(operand1) > stod(operand2) ? "#t" : "#f");
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
 
 }
 
 void Runtime::ailLt() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
 
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(
+                stod(operand1) < stod(operand2) ? "#t" : "#f");
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
 }
 
 void Runtime::ailNot() {
-
+    string operand = this->currentProcessPtr->popOperand();
+    this->currentProcessPtr->pushOperand(operand == "#f" ? "#t" : "#f");
+    this->currentProcessPtr->step();
 }
 
 void Runtime::ailAnd() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
 
+    if(operand1 == "#f" || operand2 == "#f") {
+        this->currentProcessPtr->pushOperand("#f");
+    } else {
+        this->currentProcessPtr->pushOperand("#t");
+    }
+
+    this->currentProcessPtr->step();
 }
 
 void Runtime::ailOr() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
 
+    if(operand1 == "#t" || operand2 == "#t") {
+        this->currentProcessPtr->pushOperand("#t");
+    } else {
+        this->currentProcessPtr->pushOperand("#f");
+    }
+
+    this->currentProcessPtr->step();
 }
 
 void Runtime::ailIseq() {
@@ -502,6 +586,9 @@ void Runtime::ailIslist() {
 }
 
 void Runtime::ailIsnumber() {
+    string operand = this->currentProcessPtr->popOperand();
+    this->currentProcessPtr->pushOperand(typeOfStr(operand) == Type::NUMBER ? "#t" : "#f");
+    this->currentProcessPtr->step();
 
 }
 
@@ -511,14 +598,16 @@ void Runtime::ailIsnumber() {
 
 void Runtime::ailDisplay() {
     string argument = this->currentProcessPtr->popOperand();
-    InstructionArgumentType argumentType = Instruction::getArgumentType(argument);
+    Type argumentType = typeOfStr(argument);
 
-    if (argumentType == InstructionArgumentType::HANDLE) {
+    if (argumentType == Type::HANDLE) {
         shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(argument);
         if (schemeObjectPtr->schemeObjectType == SchemeObjectType::STRING) {
             auto stringObjPtr = static_pointer_cast<StringObject>(schemeObjectPtr);
             cout << stringObjPtr->content << endl;
         }
+    } else if (argumentType == Type::NUMBER || argumentType == Type::BOOLEAN) {
+        cout << argument << endl;
     }
 
     this->currentProcessPtr->step();

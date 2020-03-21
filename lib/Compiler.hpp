@@ -453,8 +453,8 @@ void Compiler::compileAnd(Handle handle) {
     shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
     auto childrenHoses = applicationPtr->childrenHoses;
 
-    if (childrenHoses.size() < 3) {
-        throw std::runtime_error("[compileAnd] " + handle + " should have more than three or three children");
+    if (childrenHoses.size() != 3) {
+        throw std::runtime_error("[compileAnd] " + handle + " should have three children");
     }
 
     string uniqueStr = this->makeUniqueString();
@@ -483,8 +483,8 @@ void Compiler::compileOr(Handle handle) {
     shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
     auto childrenHoses = applicationPtr->childrenHoses;
 
-    if (childrenHoses.size() < 3) {
-        throw std::runtime_error("[compileOr] " + handle + " should have more than three or three children");
+    if (childrenHoses.size() != 3) {
+        throw std::runtime_error("[compileOr] " + handle + " should have three children");
     }
 
     string uniqueStr = this->makeUniqueString();
