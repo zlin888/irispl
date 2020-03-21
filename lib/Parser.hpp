@@ -615,6 +615,7 @@ bool Parser::isSymbol(const string &tokenStr) {
 void Parser::preProcessAnalysis() {
     for (auto &[handle, schemeObjPtr] : this->ast.heap.dataMap) {
         // Handle the import
+        // (import Alias Path)
         if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
             auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
             if (!applicationObjPtr->childrenHoses.empty() and applicationObjPtr->childrenHoses[0] == "import") {

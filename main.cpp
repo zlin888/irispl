@@ -13,9 +13,7 @@ int main() {
     ModuleLoader moduleLoader("../docs/ILCode-test.txt");
     Module module = Module::loadModule("../docs/mytest.scm");
 
-
-
-    Process process0 = runtime.createProcess(moduleLoader);
+    Process process0 = runtime.createProcess(module);
 
     runtime.addProcess(process0);
     runtime.schedule();

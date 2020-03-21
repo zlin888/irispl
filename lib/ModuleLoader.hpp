@@ -63,6 +63,7 @@ private:
 
     void makeImportedNameUnique();
 
+    void makeImportedNameUniqueHelper();
 };
 
 
@@ -124,53 +125,50 @@ void Module::makeImportedNameUnique() {
         for (auto &[handle, schemeObjPtr] : currentAST.heap.dataMap) {
             // only the children of lambda and application will be variable
 
-            vector<HandleOrStr> hoses;
-            if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
-                auto lambdaObjPtr = static_pointer_cast<LambdaObject>(schemeObjPtr);
-                hoses = lambdaObjPtr->bodies;
+            if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA ||
+                schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+                vector<HandleOrStr> &hoses = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr);
 
-            } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
-                auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
-                hoses = applicationObjPtr->childrenHoses;
-            }
+                if (!hoses.empty() && hoses[0] != "import") {
+                    // (Application of import does not need to be change name
+                    for (HandleOrStr &hos : hoses) {
+                        if (typeOfStr(hos) == Type::VARIABLE) {
 
-            if (!hoses.empty() && hoses[0] != "import") {
-                // (Application of import does not need to be change name
-                for (HandleOrStr &hos : hoses) {
-                    if (typeOfStr(hos) == Type::VARIABLE) {
+                            // split the variable like 'sort' and 'Utils.sort'
+                            vector<string> fields;
+                            boost::split(fields, hos, boost::is_any_of("."));
 
-                        // split the variable like 'sort' and 'Utils.sort'
-                        vector<string> fields;
-                        boost::split(fields, hos, boost::is_any_of("."));
+                            if (fields.size() >= 2) {
+                                // only change the name of variables that look like Utils.sort
+                                string prefix = fields.front(); //Utils, which is the alias name of the module
+                                string suffix = boost::join(vector<string>(fields.begin() + 1, fields.end()),
+                                                            "."); // sort
 
-                        if (fields.size() >= 2) {
-                            // only change the name of variables that look like Utils.sort
-                            string prefix = fields.front(); //Utils, which is the alias name of the module
-                            string suffix = boost::join(vector<string>(fields.begin() + 1, fields.end()),
-                                                        "."); // sort
-
-                            if (currentAST.moduleAliasPathMap.count(prefix)) {
-                                string moduleName = this->getModuleNameFromPath(
-                                        currentAST.moduleAliasPathMap[prefix]);
-                                if (this->allASTs[moduleName].definedVarOriginUniqueNameMap.count(suffix)) {
-                                    // find the unique name of this imported variable
-                                    string uniqueName = this->allASTs[moduleName].definedVarOriginUniqueNameMap[suffix];
-                                    hos = uniqueName;
-                                } else {
-                                    // cannot find the unique name of this imported variable
-                                    throw std::runtime_error(
-                                            "[module loader] imported variable " + hos + " in module " + astModuleName +
-                                            " is not defined in " + moduleName);
+                                if (currentAST.moduleAliasPathMap.count(prefix)) {
+                                    string moduleName = this->getModuleNameFromPath(
+                                            currentAST.moduleAliasPathMap[prefix]);
+                                    if (this->allASTs[moduleName].definedVarOriginUniqueNameMap.count(suffix)) {
+                                        // find the unique name of this imported variable
+                                        string uniqueName = this->allASTs[moduleName].definedVarOriginUniqueNameMap[suffix];
+                                        hos = uniqueName;
+                                    } else {
+                                        // cannot find the unique name of this imported variable
+                                        throw std::runtime_error(
+                                                "[module loader] imported variable " + hos + " in module " +
+                                                astModuleName +
+                                                " is not defined in " + moduleName);
+                                    }
                                 }
                             }
+                            //only change the name of the variable
                         }
-                        //only change the name of the variable
                     }
                 }
             }
         }
     }
 }
+
 
 string Module::getModuleNameFromPath(const string &path) {
     // get the last field in the path like /path/to/file
@@ -215,7 +213,8 @@ void Module::topologicSort() {
         }
 
         if (noZeroIndegreeFlag) {
-            throw runtime_error("[Error] cannot load modules properly, due to circular dependencies between modules");
+            throw runtime_error(
+                    "[Error] cannot load modules properly, due to circular dependencies between modules");
         }
 
         // node1 -> node2*, all node2's indegree need to be decreased by 1

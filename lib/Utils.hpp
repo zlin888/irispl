@@ -10,11 +10,13 @@
 #include <vector>
 #include <stdarg.h>
 #include <set>
+#include <boost/algorithm/string.hpp>
 #include "SchemeObject.hpp"
 
 using namespace std;
 
 namespace utils {
+    bool log_flag = True;
 
     inline std::string trim(const std::string &s) {
         auto wsfront = std::find_if_not(s.begin(), s.end(), [](int c) { return std::isspace(c); });
@@ -51,6 +53,19 @@ namespace utils {
         return std::move(aSet);
     }
 
+    void log(std::string message, std::string FileName = "Unset", std::string FunctionName = "Unset", int LineNumber = -1)
+    {
+        if(log_flag) {
+            vector<string> fields;
+            boost::split(fields, FileName, boost::is_any_of("/"));
+            if (!fields.empty()) {
+                FileName = fields[fields.size() - 1];
+            }
+
+            cout << FileName + ">" + FunctionName + "(" + to_string(LineNumber) + "): "+ message<< endl;
+
+        }
+    }
 }
 
 #endif //TYPED_SCHEME_UTILS_HPP

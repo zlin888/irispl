@@ -9,6 +9,7 @@
 #include <map>
 #include <queue>
 #include <stdexcept>
+#include <cmath>
 
 using namespace std;
 
@@ -23,8 +24,6 @@ public:
     void execute();
 
     int addProcess(Process process);
-
-    Process createProcess(ModuleLoader moduleLoader);
 
     PID allocatePID();
 
@@ -49,6 +48,46 @@ public:
     void ailCall(const Instruction &instruction, bool isTailCall);
 
     void ailTailCall(const Instruction &instruction);
+
+    Process createProcess(Module module);
+
+    void aliDisplay();
+
+    void ailSub();
+
+    void ailDiv();
+
+    void ailMul();
+
+    void ailMod();
+
+    void ailPow();
+
+    void ailEqn();
+
+    void ailGe();
+
+    void ailLe();
+
+    void ailGt();
+
+    void ailLt();
+
+    void ailNot();
+
+    void ailAnd();
+
+    void ailOr();
+
+    void ailIseq();
+
+    void ailIsnull();
+
+    void ailIsatom();
+
+    void ailIslist();
+
+    void ailIsnumber();
 };
 
 
@@ -67,8 +106,8 @@ int Runtime::addProcess(Process process) {
 };
 
 // process factory, allocate PID and help to pass module loader to the constructor of the process
-Process Runtime::createProcess(ModuleLoader moduleLoader) {
-    Process process(this->allocatePID(), moduleLoader);
+Process Runtime::createProcess(Module module) {
+    Process process(this->allocatePID(), module);
     return process;
 }
 
@@ -115,32 +154,40 @@ void Runtime::execute() {
         string argument = instruction.argument;
         string mnemonic = instruction.mnemonic;
 
-        try {
-            if (mnemonic == "store") {
-                this->ailStore();
-            } else if (mnemonic == "load") {
-                this->ailLoad();
-            } else if (mnemonic == "call") {
-                this->ailCall(instruction);
-            } else if (mnemonic == "tailcall") {
-                this->ailTailCall(instruction);
-            } else if (mnemonic == "push") {
-                this->ailPush();
-            } else if (mnemonic == "return") {
-                this->ailReturn();
-            } else if (mnemonic == "halt") {
-                this->ailHalt();
-            } else if (mnemonic == "add") {
-                ailAdd();
-            } else {
-                this->currentProcessPtr->step();
-            }
-        } catch (exception &e) {
-            std::cout << "-> Runtime::execute, when running (" << instruction.instructionStr << ")\n";
-            std::cout << "--> " << e.what() << "\n";
-            exit(0);
-        }
+//        try {
+        if (mnemonic == "store") { this->ailStore(); }
+        else if (mnemonic == "load") { this->ailLoad(); }
+        else if (mnemonic == "call") { this->ailCall(instruction); }
+        else if (mnemonic == "tailcall") { this->ailTailCall(instruction); }
+        else if (mnemonic == "push") { this->ailPush(); }
+        else if (mnemonic == "return") { this->ailReturn(); }
+        else if (mnemonic == "halt") { this->ailHalt(); }
 
+        else if (mnemonic == "add") { this->ailAdd(); }
+        else if (mnemonic == "sub") { this->ailSub(); }
+        else if (mnemonic == "mul") { this->ailMul(); }
+        else if (mnemonic == "div") { this->ailDiv(); }
+        else if (mnemonic == "mod") { this->ailMod(); }
+        else if (mnemonic == "pow") { this->ailPow(); }
+        else if (mnemonic == "eqn") { this->ailEqn(); }
+        else if (mnemonic == "ge") { this->ailGe(); }
+        else if (mnemonic == "le") { this->ailLe(); }
+        else if (mnemonic == "gt") { this->ailGt(); }
+        else if (mnemonic == "lt") { this->ailLt(); }
+        else if (mnemonic == "not") { this->ailNot(); }
+        else if (mnemonic == "and") { this->ailAnd(); }
+        else if (mnemonic == "or") { this->ailOr(); }
+        else if (mnemonic == "eq?") { this->ailIseq(); }
+        else if (mnemonic == "null?") { this->ailIsnull(); }
+        else if (mnemonic == "atom?") { this->ailIsatom(); }
+        else if (mnemonic == "list?") { this->ailIslist(); }
+        else if (mnemonic == "number?") { this->ailIsnumber(); }
+
+
+        else if (mnemonic == "display") { this->ailDisplay(); }
+        else {
+            this->currentProcessPtr->step();
+        }
     } else {
         this->currentProcessPtr->step();
     }
@@ -323,11 +370,140 @@ void Runtime::ailAdd() {
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
         // TODO: NUMBER is not enough, we need better integer system here
         this->currentProcessPtr->pushOperand(to_string(stod(operand1) + stod(operand2)));
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
     }
 
     this->currentProcessPtr->step();
 }
 
+void Runtime::ailSub() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
+
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(to_string(stod(operand1) - stod(operand2)));
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailDiv() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
+
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(to_string(stod(operand1) / stod(operand2)));
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailMul() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
+
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(to_string(stod(operand1) * stod(operand2)));
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailMod() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
+
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(to_string((int) (stod(operand1) + 0.5) % (int) (stod(operand2) + 0.5)));
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailPow() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
+
+    if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
+        Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
+        this->currentProcessPtr->pushOperand(to_string(pow(stod(operand1), stod(operand2))));
+    } else {
+        utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailEqn() {
+
+}
+
+void Runtime::ailGe() {
+
+}
+
+void Runtime::ailLe() {
+
+}
+
+void Runtime::ailGt() {
+
+}
+
+void Runtime::ailLt() {
+
+}
+
+void Runtime::ailNot() {
+
+}
+
+void Runtime::ailAnd() {
+
+}
+
+void Runtime::ailOr() {
+
+}
+
+void Runtime::ailIseq() {
+
+}
+
+void Runtime::ailIsnull() {
+
+}
+
+void Runtime::ailIsatom() {
+
+}
+
+void Runtime::ailIslist() {
+
+}
+
+void Runtime::ailIsnumber() {
+
+}
 
 //=================================================================
 //                      Other Instructions
@@ -340,9 +516,13 @@ void Runtime::ailDisplay() {
     if (argumentType == InstructionArgumentType::HANDLE) {
         shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(argument);
         if (schemeObjectPtr->schemeObjectType == SchemeObjectType::STRING) {
-            //TODO display string
+            auto stringObjPtr = static_pointer_cast<StringObject>(schemeObjectPtr);
+            cout << stringObjPtr->content << endl;
         }
     }
+
+    this->currentProcessPtr->step();
 }
+
 
 #endif // !RUNTIME_HPP

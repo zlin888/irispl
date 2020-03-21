@@ -44,7 +44,7 @@ public:
     int PC = 0;
     std::shared_ptr<Closure> currentClosurePtr;
 
-    Process(PID newPid, const ModuleLoader &moduleLoader);
+    Process(PID newPid, const Module &module);
 
     Instruction currentInstruction();
 
@@ -99,17 +99,18 @@ Instruction Process::currentInstruction() {
     return this->instructions[PC];
 }
 
-Process::Process(PID newPid, const ModuleLoader &moduleLoader) {
+Process::Process(PID newPid, const Module &module) {
     this->pid = newPid;
 
     // from module loader loads instructionStr (string -> instructionStr)
-    for (auto &i : moduleLoader.ILCode) {
+    for (auto &i : module.ILCode) {
         this->instructions.emplace_back(Instruction(i));
     }
 
     // The top closure (not need to worry about this, because this is just a lambda (closure) acted as a beginner
     // > at the top of everything
     this->currentClosurePtr = std::shared_ptr<Closure>(new Closure(-1, nullptr, TOP_NODE_HANDLE));
+    this->heap = module.ast.heap;
     this->heap.set(TOP_NODE_HANDLE, this->currentClosurePtr);
 
     this->initLabelLineMap();

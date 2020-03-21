@@ -214,7 +214,7 @@ void Analyser::scopeAnalyse() {
                    schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE ||
                    schemeObjPtr->schemeObjectType == SchemeObjectType::QUASIQUOTE) {
 
-            auto childrenHoses = SchemeObject::getChildrenHoses(schemeObjPtr);
+            auto &childrenHoses = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr);
             Handle parentHandle = schemeObjPtr->parentHandle;
 
             // change the variable name in application, unquote and quasiquote

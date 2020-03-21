@@ -44,7 +44,7 @@ public:
     SchemeObjectType schemeObjectType;
     Handle parentHandle;
 
-    static std::vector<HandleOrStr> &getChildrenHoses(shared_ptr<SchemeObject> schemeObjPtr);
+    static std::vector<HandleOrStr> &getChildrenHosesOrBodies(shared_ptr<SchemeObject> schemeObjPtr);
 };
 
 
@@ -264,13 +264,15 @@ Type typeOfStr(const string &inputStr) {
     }
 }
 
-std::vector<HandleOrStr> &SchemeObject::getChildrenHoses(shared_ptr<SchemeObject> schemeObjPtr) {
+std::vector<HandleOrStr> &SchemeObject::getChildrenHosesOrBodies(shared_ptr<SchemeObject> schemeObjPtr) {
     if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
         return static_pointer_cast<ApplicationObject>(schemeObjPtr)->childrenHoses;
     } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE) {
         return static_pointer_cast<UnquoteObject>(schemeObjPtr)->childrenHoses;
     } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUASIQUOTE) {
-        return static_pointer_cast<UnquoteObject>(schemeObjPtr)->childrenHoses;
+        return static_pointer_cast<QuasiquoteObject>(schemeObjPtr)->childrenHoses;
+    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+        return static_pointer_cast<LambdaObject>(schemeObjPtr)->bodies;
     }
     throw std::runtime_error("[getChildrenHoses] not a application, unquote or quasiquote");
 }

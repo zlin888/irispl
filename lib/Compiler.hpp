@@ -130,7 +130,7 @@ void Compiler::compileHos(HandleOrStr hos) {
 
         if (schemeObjectType == SchemeObjectType::LAMBDA) {
             this->addInstruction("loadclosure @" + hos);
-        } else if (schemeObjectType == SchemeObjectType::QUOTE) {
+        } else if (schemeObjectType == SchemeObjectType::QUOTE || schemeObjectType == SchemeObjectType::STRING) {
             this->addInstruction("push " + hos);
         } else if (schemeObjectType == SchemeObjectType::QUASIQUOTE) {
             this->compileQuasiquote(hos);
@@ -145,7 +145,7 @@ void Compiler::compileHos(HandleOrStr hos) {
     } else if (hosType == Type::UNDEFINED) {
         throw std::runtime_error("[compileHos] hos '" + hos + "'type is undefined");
     } else {
-        // TYPE is number || boolean || symbol || string ||keyword || port || quote
+        // TYPE is number || boolean || symbol ||keyword || port || quote
         this->addInstruction("push " + hos);
     }
 }

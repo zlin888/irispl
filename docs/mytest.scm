@@ -7,6 +7,10 @@
 
 ;; 简单的中缀表达式解析
 ;; 参见 The Little Schemer
+(+ "jack" 3)
+(display "jack")
+(Utils.show "jackk")
+(display (+ "i" 2))
 
 (define a (lambda (f) '(f + 12)))
 (define numbered?
@@ -28,7 +32,7 @@
            (/ (value (car aexp)) (value (car (cdr (cdr aexp))))))
           (else (display "Unexpected operator")))))
 
-(display (value '((1 / 3) - (1 / 4))))
+;; (display (value '((1 / 3) - (1 / 4))))
 (define f #f)
 (define hello
   (lambda (num)
