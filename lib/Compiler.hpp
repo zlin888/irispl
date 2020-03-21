@@ -69,6 +69,10 @@ public:
     void compileAnd(Handle handle);
 
     void compileOr(Handle handle);
+
+    void compileFork(Handle handle);
+
+    void compileCallCC(Handle handle);
 };
 
 vector<Instruction> Compiler::compile(AST ast) {
@@ -159,14 +163,14 @@ void Compiler::compileApplication(Handle handle) {
     Type firstType = typeOfStr(first);
     if (first == "import") { return; }
     else if (first == "native") { return; }
-//    else if(first == "call/cc") { return CompileCallCC(nodeHandle); }
+    else if (first == "call/cc") { return this->compileCallCC(handle); }
     else if (first == "define") { return this->compileDefine(handle); }
     else if (first == "set!") { return this->compileSet(handle); }
     else if (first == "cond") { return this->compileCond(handle); }
     else if (first == "if") { return this->compileIf(handle); }
-    else if(first == "and")     { return this->compileAnd(handle);}
-    else if(first == "or")      { return this->compileOr(handle);}
-//    else if(first == "fork")    { AddInstruction(`fork ${children[1]}`); return;
+    else if (first == "and") { return this->compileAnd(handle); }
+    else if (first == "or") { return this->compileOr(handle); }
+    else if (first == "fork") { return this->compileFork(handle); }
 
     if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::APPLICATION) {
         this->compileComplexApplication(handle);
@@ -177,11 +181,8 @@ void Compiler::compileApplication(Handle handle) {
             this->compileHos(childrenHoses[i]);
         }
 
-        // 处理调用。需要做这样几件事情：
-        // 1、确保首项是合法的可调用项，变量、Native、Primitive、Lambda
-        // 2、处理import的外部变量名称（Native不必处理，保留原形）
-        //    TODO 外部变量的处理方式根据整个系统对多模块的支持方式不同而不同。这里采取的策略是：暂不处理，交给运行时的模块加载器去动态地处理。
-        // 3、处理尾递归
+        // 1. Make sure the first child is valid: native, variable, primitive, lambda
+        // 2. handle tailcall
 
         // Primitive
         // handle the expected parameters better
@@ -452,10 +453,10 @@ void Compiler::compileAnd(Handle handle) {
     shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
     auto childrenHoses = applicationPtr->childrenHoses;
 
-    if (childrenHoses.size() > 3) {
-        throw std::runtime_error("[compileAnd] " + handle + " should have more than three children");
+    if (childrenHoses.size() < 3) {
+        throw std::runtime_error("[compileAnd] " + handle + " should have more than three or three children");
     }
-    
+
     string uniqueStr = this->makeUniqueString();
     string endLabel = "@AND_END_" + uniqueStr;
     string falseLabel = "@AND_FALSE_" + uniqueStr;
@@ -482,8 +483,8 @@ void Compiler::compileOr(Handle handle) {
     shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
     auto childrenHoses = applicationPtr->childrenHoses;
 
-    if (childrenHoses.size() > 3) {
-        throw std::runtime_error("[compileAnd] " + handle + " should have more than three children");
+    if (childrenHoses.size() < 3) {
+        throw std::runtime_error("[compileOr] " + handle + " should have more than three or three children");
     }
 
     string uniqueStr = this->makeUniqueString();
@@ -506,6 +507,49 @@ void Compiler::compileOr(Handle handle) {
     this->addInstruction("push #t");
 
     this->addInstruction(endLabel);
+}
+
+void Compiler::compileFork(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+    auto childrenHoses = applicationPtr->childrenHoses;
+
+    if (childrenHoses.size() != 2) {
+        throw std::runtime_error("[compileFork] " + handle + " should have two children");
+    }
+
+    this->addInstruction("fork " + childrenHoses[1]);
+
+}
+
+
+void Compiler::compileCallCC(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+    auto childrenHoses = applicationPtr->childrenHoses;
+
+    if (childrenHoses.size() != 2) {
+        throw std::runtime_error("[compileFork] " + handle + " should have two children");
+    }
+
+    HandleOrStr thunk = childrenHoses[1];
+    Type thunkType = typeOfStr(thunk);
+
+    string contLabel = "CC_" + thunk + "_" + this->makeUniqueString();
+
+    this->addInstruction("capturecc " + contLabel);
+    this->addInstruction("load " + contLabel);
+
+    if (thunkType == Type::HANDLE) {
+        shared_ptr<SchemeObject> schemeObjPtr = this->ast.get(thunk);
+        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+            this->addInstruction("call @" + thunk);
+        } else {
+            throw "[compileCallCC] call/cc's argument must be a thunk";
+        }
+    } else if (thunkType == Type::VARIABLE) {
+        this->addInstruction("call " + thunk);
+    } else {
+        throw "[compileCallCC] call/cc's argument must be a thunk";
+    }
 }
 
 string Compiler::makeUniqueString() {
