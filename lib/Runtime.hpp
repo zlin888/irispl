@@ -88,6 +88,32 @@ public:
     void ailIslist();
 
     void ailIsnumber();
+
+    void ailFork();
+
+    void ailNewline();
+
+    void ailRead();
+
+    void ailWrite();
+
+    void ailNop();
+
+    void ailPause();
+
+    void ailSetchild();
+
+    void ailConcat();
+
+    void ailDuplicate();
+
+    void output(string argument);
+
+    void ailPop();
+
+    Handle newClosureBaseOnCurrentClosure(int instAddress);
+
+    void ailSet();
 };
 
 
@@ -157,9 +183,14 @@ void Runtime::execute() {
 //        try {
         if (mnemonic == "store") { this->ailStore(); }
         else if (mnemonic == "load") { this->ailLoad(); }
+        else if (mnemonic == "loadclosure") { this->aliLoadClosure(); }
+        else if (mnemonic == "push") { this->ailPush(); }
+        else if (mnemonic == "pop") { this->ailPop(); }
+        else if(mnemonic == "set") { this->ailSet(); }
+
+
         else if (mnemonic == "call") { this->ailCall(instruction); }
         else if (mnemonic == "tailcall") { this->ailTailCall(instruction); }
-        else if (mnemonic == "push") { this->ailPush(); }
         else if (mnemonic == "return") { this->ailReturn(); }
         else if (mnemonic == "halt") { this->ailHalt(); }
 
@@ -184,7 +215,18 @@ void Runtime::execute() {
         else if (mnemonic == "number?") { this->ailIsnumber(); }
 
 
+        else if (mnemonic == "fork") { this->ailFork(); }
         else if (mnemonic == "display") { this->ailDisplay(); }
+        else if (mnemonic == "newline") { this->ailNewline(); }
+        else if (mnemonic == "read") { this->ailRead(); }
+        else if (mnemonic == "write") { this->ailWrite(); }
+        else if (mnemonic == "nop") { this->ailNop(); }
+        else if (mnemonic == "pause") { this->ailPause(); }
+        else if (mnemonic == "halt") { this->ailHalt(); }
+
+        else if (mnemonic == "set-child!") { this->ailSetchild(); }
+        else if (mnemonic == "concat") { this->ailConcat(); }
+        else if (mnemonic == "duplicate") { this->ailDuplicate(); }
         else {
             this->currentProcessPtr->step();
         }
@@ -214,20 +256,50 @@ void Runtime::ailStore() {
     this->currentProcessPtr->step();
 }
 
+Handle Runtime::newClosureBaseOnCurrentClosure(int instAddress) {
+    Handle newClosureHandle = this->currentProcessPtr->newClosure(instAddress);
+    auto currentClosurePtr = this->currentProcessPtr->currentClosurePtr;
+
+    auto freeVariables = this->currentProcessPtr->currentClosurePtr->freeVariables;
+    for (auto &freeVariable : freeVariables) {
+        this->currentProcessPtr->getClosurePtr(newClosureHandle)->setFreeVariable(freeVariable.first,
+                                                                                  freeVariable.second,
+                                                                                  false);
+    }
+
+    auto boundVariables = this->currentProcessPtr->currentClosurePtr->boundVariables;
+    for (auto &boundVariable : boundVariables) {
+        this->currentProcessPtr->getClosurePtr(newClosureHandle)->setBoundVariable(boundVariable.first,
+                                                                                   boundVariable.second,
+                                                                                   false);
+    }
+    return newClosureHandle;
+}
+
+// load variable, dereference and push the stask
 void Runtime::ailLoad() {
-    // Unfinished
     Instruction instruction = this->currentProcessPtr->currentInstruction();
     if (instruction.argumentType == InstructionArgumentType::VARIABLE) {
-        string variableName = instruction.argument;
-        string variableValue = this->currentProcessPtr->dereference(variableName);
+        string argument = instruction.argument;
+        string argumentValue = this->currentProcessPtr->dereference(argument);
 
-        Instruction tempInstruction("load " + variableValue);
+        Type argumentValueType = typeOfStr(argumentValue);
 
-        if (tempInstruction.argumentType == InstructionArgumentType::LABEL) {
-            // TODO loadclosure
-            this->currentProcessPtr->step();
+        if (argumentValueType == Type::LABEL) {
+            if (this->currentProcessPtr->labelAddressMap.count(argumentValue)) {
+                int instAddress = this->currentProcessPtr->labelAddressMap[argumentValue];
+
+                Handle newClosureHandle = this->newClosureBaseOnCurrentClosure(instAddress);
+
+                this->currentProcessPtr->pushOperand(newClosureHandle);
+                this->currentProcessPtr->step();
+            } else {
+                utils::log("label doesn't exist", __FILE__, __FUNCTION__, __LINE__);
+                throw std::runtime_error("");
+            }
         } else {
-            this->currentProcessPtr->pushOperand(tempInstruction.argument);
+            // variable
+            this->currentProcessPtr->pushOperand(argumentValue);
             this->currentProcessPtr->step();
         }
     } else {
@@ -240,33 +312,69 @@ void Runtime::aliLoadClosure() {
     if (instruction.argumentType == InstructionArgumentType::LABEL) {
         string label = instruction.argument;
 
-    } else {
-        throw std::invalid_argument("[ERROR] loadclosure argument is not a label: aliLoadClosure");
-    }
-//    let argType = TypeOfToken(argument);
-//
-//    if(argType !== 'LABEL') { throw `[Error] loadclosure指令参数类型不是标签`; }
+        if (this->currentProcessPtr->labelAddressMap.count(label)) {
+            int instAddress = this->currentProcessPtr->labelAddressMap[label];
 
-//    let label = argument;
-//    let instAddress = PROCESS.GetLabelAddress(label);
-//    let newClosureHandle = PROCESS.NewClosure(instAddress, PROCESS.currentClosureHandle);
-//    let currentClosure = PROCESS.GetCurrentClosure();
-//    for(let v in currentClosure.freeVariables) {
-//        let value = currentClosure.GetFreeVariable(v);
-//        PROCESS.GetClosure(newClosureHandle).InitFreeVariable(v, value);
-//    }
-//    for(let v in currentClosure.boundVariables) {
-//        let value = currentClosure.GetBoundVariable(v);
-//        PROCESS.GetClosure(newClosureHandle).InitFreeVariable(v, value);
-//    }
-//    PROCESS.PushOperand(newClosureHandle);
-//    PROCESS.Step();
+            Handle newClosureHandle = this->newClosureBaseOnCurrentClosure(instAddress);
+
+            this->currentProcessPtr->pushOperand(newClosureHandle);
+            this->currentProcessPtr->step();
+        } else {
+            utils::log("label doesn't exist", __FILE__, __FUNCTION__, __LINE__);
+            throw std::runtime_error("");
+        }
+
+    } else {
+        utils::log("loadclosure argument is not a label", __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
 }
 
 void Runtime::ailPush() {
     Instruction instruction = this->currentProcessPtr->currentInstruction();
     this->currentProcessPtr->pushOperand(instruction.argument);
     this->currentProcessPtr->step();
+}
+
+void Runtime::ailPop() {
+    this->currentProcessPtr->popOperand();
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailSet() {
+    Instruction instruction = this->currentProcessPtr->currentInstruction();
+    Type argumentType = instruction.argumentType;
+    if(argumentType != Type::VARIABLE) {
+        utils::log("argument is not a variable", __FILE__, __FUNCTION__, __LINE__);
+        throw std::invalid_argument("");
+    }
+
+    string variable = instruction.argument;
+    string newValue = this->currentProcessPtr->popOperand();
+
+    if(this->currentProcessPtr->currentClosurePtr->hasBoundVariable(variable)) {
+        this->currentProcessPtr->currentClosurePtr->setBoundVariable(variable, newValue, true);
+    }
+
+    if(this->currentProcessPtr->currentClosurePtr->hasFreeVariable(variable)) {
+        this->currentProcessPtr->currentClosurePtr->setFreeVariable(variable, newValue, true);
+    }
+
+    // track up, change the parent closure
+    Handle currentClosureHandle = this->currentProcessPtr->currentClosurePtr->parentHandle;
+
+    while(currentClosureHandle != TOP_NODE_HANDLE && this->currentProcessPtr->heap.hasHandle(currentClosureHandle)) {
+        auto currentClosurePtr = this->currentProcessPtr->getClosurePtr(currentClosureHandle);
+        if(currentClosurePtr->hasBoundVariable(variable)) {
+            this->currentProcessPtr->currentClosurePtr->setBoundVariable(variable, newValue, true);
+        }
+
+        currentClosureHandle = currentClosurePtr->parentHandle;
+    }
+
+    this->currentProcessPtr->step();
+
 }
 
 //=================================================================
@@ -292,20 +400,7 @@ void Runtime::ailCall(const Instruction &instruction, bool isTailCall) {
         string label = instruction.argument;
 
         // create a new closure for the function execution
-        Handle newClosureHandle = this->currentProcessPtr->newClosure(callInstructionAddress);
-
-        // Copy the bound and free variables from the current closure to the new closure
-        auto freeVariables = this->currentProcessPtr->currentClosurePtr->freeVariables;
-        for (auto &freeVariable : freeVariables) {
-            this->currentProcessPtr->getClosurePtr(newClosureHandle)->setFreeVariable(freeVariable.first,
-                                                                                      freeVariable.second, false);
-        }
-
-        auto boundVariables = this->currentProcessPtr->currentClosurePtr->boundVariables;
-        for (auto &boundVariable : boundVariables) {
-            this->currentProcessPtr->getClosurePtr(newClosureHandle)->setBoundVariable(boundVariable.first,
-                                                                                       boundVariable.second, false);
-        }
+        Handle newClosureHandle = this->newClosureBaseOnCurrentClosure(callInstructionAddress);
 
         // Set the current closure to the new closure and then head to the new function's instructions
         this->currentProcessPtr->setCurrentClosure(newClosureHandle);
@@ -547,7 +642,7 @@ void Runtime::ailAnd() {
     string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
 
-    if(operand1 == "#f" || operand2 == "#f") {
+    if (operand1 == "#f" || operand2 == "#f") {
         this->currentProcessPtr->pushOperand("#f");
     } else {
         this->currentProcessPtr->pushOperand("#t");
@@ -560,7 +655,7 @@ void Runtime::ailOr() {
     string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
 
-    if(operand1 == "#t" || operand2 == "#t") {
+    if (operand1 == "#t" || operand2 == "#t") {
         this->currentProcessPtr->pushOperand("#t");
     } else {
         this->currentProcessPtr->pushOperand("#f");
@@ -611,6 +706,44 @@ void Runtime::ailDisplay() {
     }
 
     this->currentProcessPtr->step();
+}
+
+void Runtime::ailFork() {
+
+}
+
+void Runtime::ailNewline() {
+    cout << "" << endl;
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailRead() {
+
+}
+
+void Runtime::ailWrite() {
+
+}
+
+// blank instruction, do nothing
+void Runtime::ailNop() {
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailPause() {
+    this->currentProcessPtr->state = ProcessState::SUSPENDED;
+}
+
+void Runtime::ailSetchild() {
+
+}
+
+void Runtime::ailConcat() {
+
+}
+
+void Runtime::ailDuplicate() {
+
 }
 
 

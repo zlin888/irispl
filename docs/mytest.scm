@@ -7,10 +7,8 @@
 
 ;; 简单的中缀表达式解析
 ;; 参见 The Little Schemer
-(display "jack")
-(Utils.show "jackk")
-(display (= 2.12 2))
-(display (- (+ 2.12 2) 12))
+(define k (lambda () (define c (+ 77 12)) c))
+(display (k))
 
 (define a (lambda (f) '(f + 12)))
 (define numbered?

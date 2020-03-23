@@ -6,6 +6,7 @@
 #define TYPED_SCHEME_INSTRUCTION_HPP
 
 #include "Utils.hpp"
+#include "SchemeObject.hpp"
 #include <string>
 #include <regex>
 
@@ -13,9 +14,7 @@ enum class InstructionType {
     LABEL, COMMENT, INSTRUCTION
 };
 
-enum class InstructionArgumentType {
-    UNDEFINED, LAMBDA, PORT, HANDLE, SYMBOL, LABEL, VARIABLE, STRING, NUMBER
-};
+typedef Type InstructionArgumentType;
 
 using namespace std;
 
@@ -64,29 +63,8 @@ Instruction::Instruction(string instString){
     }
 }
 
-// TODO
-// NUMBER? BOOLEAN? VARIABLE?
-// Doesn't really solve the type of parameters problem
 InstructionArgumentType Instruction::getArgumentType(string arg) {
-    if (arg.empty()) {
-        return InstructionArgumentType::UNDEFINED;
-    } else if (arg == "lambda") {
-        return InstructionArgumentType::LAMBDA;
-    } else if (arg[0] == ':') {
-        return InstructionArgumentType::PORT;
-    } else if (arg[0] == '&') {
-        return InstructionArgumentType::HANDLE;
-    } else if (arg[0] == '\'') {
-        return InstructionArgumentType::SYMBOL;
-    } else if (arg[0] == '@') {
-        return InstructionArgumentType::LABEL;
-    } else if (arg[0] == '"' && arg[arg.size() - 1] == '"') {
-        return InstructionArgumentType::STRING;
-    } else if (std::regex_match(arg, std::regex("(-?[0-9]+([.][0-9]+)?)"))) {
-        return InstructionArgumentType::NUMBER;
-    } else {
-        return InstructionArgumentType::VARIABLE;
-    }
+    return typeOfStr(arg);
 };
 
 
