@@ -52,6 +52,8 @@ public:
 
     static Module loadModule(string path);
 
+    static Module loadModuleFromCode(string code);
+
 private:
     void importModule(const string &path);
 
@@ -64,8 +66,35 @@ private:
     void makeImportedNameUnique();
 
     void makeImportedNameUniqueHelper();
+
+    void importModuleFromCode(const string &code);
+
 };
 
+
+Module Module::loadModuleFromCode(string code) {
+    code = "((lambda () " + code + "))\n";
+
+    Module module;
+    module.importModuleFromCode(code); //Lexer, parser, analyser
+    module.topologicSort();
+    module.makeImportedNameUnique();
+
+    Module mergeModule;
+    mergeModule.ast = module.allASTs[Module::getModuleNameFromPath("repl")];
+
+    // -1 to skip the last module
+    // the top module, the module that you run, is always the last module in the sorted list
+    int k = module.sortedModuleNames.size() - 1;
+    for (int i = 0; i < k; i++) {
+        string moduleName = module.sortedModuleNames[i];
+        mergeModule.ast.mergeAST(module.allASTs[moduleName]);
+    }
+
+    mergeModule.ILCode = Compiler::compile(mergeModule.ast);
+
+    return mergeModule;
+}
 
 Module Module::loadModule(string path) {
     boost::trim(path);
@@ -91,6 +120,24 @@ Module Module::loadModule(string path) {
 
 }
 
+void Module::importModuleFromCode(const string &code) {
+    // for repl
+    string moduleName = this->getModuleNameFromPath("repl");
+
+    AST currentAST;
+
+    currentAST = Parser::parse(Lexer::tokenize(code), moduleName, code);
+    currentAST = Analyser::analyse(currentAST);
+
+    this->allASTs[moduleName] = currentAST;
+
+    for (auto &[dependencyModuleAlias, dependencyModulePath] : currentAST.moduleAliasPathMap) {
+        this->dependencies.push_back(make_pair(moduleName, getModuleNameFromPath(dependencyModulePath)));
+        this->importModule(dependencyModulePath);
+    }
+
+    // topologic sort the imported module in dependencies, can put the result to this->sortedModuleName
+}
 
 void Module::importModule(const string &path) {
     string code = this->getFormattedCode(path);

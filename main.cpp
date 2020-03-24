@@ -2,21 +2,34 @@
 #include "lib/Runtime.hpp"
 #include "lib/Process.hpp"
 #include "lib/ModuleLoader.hpp"
-#include "lib/Lexer.hpp"
-#include "lib/Utils.hpp"
-#include "lib/Parser.hpp"
+#include <cstdlib>
+#include "lib/REPL.hpp"
 
-int main() {
-    Runtime runtime;
+using namespace std;
 
-    // the executable file located in cmake-build-debug
-    ModuleLoader moduleLoader("../docs/ILCode-test.txt");
-    Module module = Module::loadModule("../docs/mytest.scm");
+int main(int argc, const char *argv[]) {
 
-    Process process0 = runtime.createProcess(module);
+    // run script
+    if(argc == 2) {
+        char actualpath[PATH_MAX+1];
+        realpath(argv[1], actualpath);
 
-    runtime.addProcess(process0);
-    runtime.schedule();
+        Runtime runtime;
+
+        // the executable file located in cmake-build-debug
+        Module module = Module::loadModule(actualpath);
+
+        Process process0 = runtime.createProcess(module);
+
+        runtime.addProcess(process0);
+        runtime.schedule();
 //    runtime.execute(process0);
-    return 0;
+        return 0;
+    }
+
+    // REPL
+    else {
+        REPL::start();
+    }
+
 }

@@ -13,5 +13,3 @@ add_executable(main main.cpp lib/Parser.hpp lib/Heap.hpp lib/Analyser.hpp lib/Co
 target_link_libraries( main ${Boost_LIBRARIES} )
 
 add_executable(typed_scheme main.cpp)
-
-add_subdirectory(Catch_tests)

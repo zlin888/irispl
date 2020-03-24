@@ -13,11 +13,21 @@
 
 using namespace std;
 
+enum class OutputMode {
+    BUFFERED, UNBUFFERED
+};
+
 class Runtime {
 public:
     map<PID, std::shared_ptr<Process>> processPool;
     queue<std::shared_ptr<Process>> processQueue;
     std::shared_ptr<Process> currentProcessPtr;
+    vector<string> outputBuffer;
+    OutputMode outputMode;
+
+    inline Runtime() { this->outputMode = OutputMode::UNBUFFERED; };
+
+    inline Runtime(OutputMode outputMode) : outputMode(outputMode) {};
 
     void schedule();
 
@@ -107,13 +117,16 @@ public:
 
     void ailDuplicate();
 
-    void output(string argument);
 
     void ailPop();
 
     Handle newClosureBaseOnCurrentClosure(int instAddress);
 
     void ailSet();
+
+    void output(string outputStr, bool is_with_endl);
+
+    void output(string outputStr);
 };
 
 
@@ -186,7 +199,7 @@ void Runtime::execute() {
         else if (mnemonic == "loadclosure") { this->aliLoadClosure(); }
         else if (mnemonic == "push") { this->ailPush(); }
         else if (mnemonic == "pop") { this->ailPop(); }
-        else if(mnemonic == "set") { this->ailSet(); }
+        else if (mnemonic == "set") { this->ailSet(); }
 
 
         else if (mnemonic == "call") { this->ailCall(instruction); }
@@ -345,7 +358,7 @@ void Runtime::ailPop() {
 void Runtime::ailSet() {
     Instruction instruction = this->currentProcessPtr->currentInstruction();
     Type argumentType = instruction.argumentType;
-    if(argumentType != Type::VARIABLE) {
+    if (argumentType != Type::VARIABLE) {
         utils::log("argument is not a variable", __FILE__, __FUNCTION__, __LINE__);
         throw std::invalid_argument("");
     }
@@ -353,20 +366,20 @@ void Runtime::ailSet() {
     string variable = instruction.argument;
     string newValue = this->currentProcessPtr->popOperand();
 
-    if(this->currentProcessPtr->currentClosurePtr->hasBoundVariable(variable)) {
+    if (this->currentProcessPtr->currentClosurePtr->hasBoundVariable(variable)) {
         this->currentProcessPtr->currentClosurePtr->setBoundVariable(variable, newValue, true);
     }
 
-    if(this->currentProcessPtr->currentClosurePtr->hasFreeVariable(variable)) {
+    if (this->currentProcessPtr->currentClosurePtr->hasFreeVariable(variable)) {
         this->currentProcessPtr->currentClosurePtr->setFreeVariable(variable, newValue, true);
     }
 
     // track up, change the parent closure
     Handle currentClosureHandle = this->currentProcessPtr->currentClosurePtr->parentHandle;
 
-    while(currentClosureHandle != TOP_NODE_HANDLE && this->currentProcessPtr->heap.hasHandle(currentClosureHandle)) {
+    while (currentClosureHandle != TOP_NODE_HANDLE && this->currentProcessPtr->heap.hasHandle(currentClosureHandle)) {
         auto currentClosurePtr = this->currentProcessPtr->getClosurePtr(currentClosureHandle);
-        if(currentClosurePtr->hasBoundVariable(variable)) {
+        if (currentClosurePtr->hasBoundVariable(variable)) {
             this->currentProcessPtr->currentClosurePtr->setBoundVariable(variable, newValue, true);
         }
 
@@ -699,13 +712,29 @@ void Runtime::ailDisplay() {
         shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(argument);
         if (schemeObjectPtr->schemeObjectType == SchemeObjectType::STRING) {
             auto stringObjPtr = static_pointer_cast<StringObject>(schemeObjectPtr);
-            cout << stringObjPtr->content << endl;
+            this->output(stringObjPtr->content);
         }
     } else if (argumentType == Type::NUMBER || argumentType == Type::BOOLEAN) {
-        cout << argument << endl;
+        this->output(argument);
     }
 
     this->currentProcessPtr->step();
+}
+
+void Runtime::output(string outputStr) {
+    this->output(outputStr, true);
+}
+
+void Runtime::output(string outputStr, bool is_with_endl) {
+    if(this->outputMode == OutputMode::UNBUFFERED) {
+        if(is_with_endl) {
+            cout << outputStr << endl;
+        } else {
+            cout << outputStr;
+        }
+    } else if(this->outputMode == OutputMode::BUFFERED) {
+        this->outputBuffer.push_back(outputStr);
+    }
 }
 
 void Runtime::ailFork() {
