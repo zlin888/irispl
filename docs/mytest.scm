@@ -7,34 +7,27 @@
 
 ;; 简单的中缀表达式解析
 ;; 参见 The Little Schemer
-(define k (lambda () (define c (+ 77 12)) c))
-(display (k))
 
-(define a (lambda (f) '(f + 12)))
-(define numbered?
-  (lambda (aexp)
-    (cond ((atom? aexp) (number? aexp))
-          ((atom? (car (cdr aexp))) (and (numbered? (car aexp)) (numbered? (car (cdr (cdr aexp))))))
-          (else #f))))
+(define k (quote + -))
+(define j '*)
 
-(define value
-  (lambda (aexp)
-    (cond ((atom? aexp) aexp)
-          ((eq? (car (cdr aexp)) '+)
-           (+ (value (car aexp)) (value (car (cdr (cdr aexp))))))
-          ((eq? (car (cdr aexp)) '-)
-           (- (value (car aexp)) (value (car (cdr (cdr aexp))))))
-          ((eq? (car (cdr aexp)) '*)
-           (* (value (car aexp)) (value (car (cdr (cdr aexp))))))
-          ((eq? (car (cdr aexp)) '/)
-           (/ (value (car aexp)) (value (car (cdr (cdr aexp))))))
-          (else (display "Unexpected operator")))))
+(define con
+    (lambda (x y)
+        (lambda (v)
+            (if (eq? v 'car)
+                x
+                (if (eq? v 'cdr) y 77)))))
 
-;; (display (value '((1 / 3) - (1 / 4))))
-(define f #f)
-(define hello
-  (lambda (num)
-    (if (= num 12) 24 77)))
+(define carr
+    (lambda (l)
+        (l 'car)))
 
-;; (define self (lambda (f) (+ f Utils.s)))
-;; (define self (lambda (f) NoModule.s))
+(define cdrr
+    (lambda (l)
+        (l 'cdr)))
+
+(define l (con 12 13))
+(display (carr l))
+(display (cdrr l))
+
+

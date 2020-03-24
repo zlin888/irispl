@@ -48,7 +48,6 @@ public:
 };
 
 
-
 class Closure : public SchemeObject {
 public:
 
@@ -146,6 +145,7 @@ public:
     QuoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUOTE, parentHandle) {};
 
     vector<HandleOrStr> childrenHoses;
+
     void addChild(HandleOrStr childHos);
 };
 
@@ -159,6 +159,7 @@ public:
     QuasiquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUASIQUOTE, parentHandle) {};
 
     vector<HandleOrStr> childrenHoses;
+
     void addChild(HandleOrStr childHos);
 };
 
@@ -171,6 +172,7 @@ public:
     UnquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::UNQUOTE, parentHandle) {};
 
     vector<HandleOrStr> childrenHoses;
+
     void addChild(HandleOrStr childHos);
 };
 
@@ -225,6 +227,21 @@ enum class Type {
     UNDEFINED, LAMBDA, PORT, HANDLE, SYMBOL, LABEL, VARIABLE, STRING, NUMBER, KEYWORD, BOOLEAN
 };
 
+
+map<Type, string> TypeStrMap = {
+        {Type::UNDEFINED, "UNDEFINED"},
+        {Type::LAMBDA,    "LAMBDA"},
+        {Type::PORT,      "PORT"},
+        {Type::HANDLE,    "HANDLE"},
+        {Type::SYMBOL,    "SYMBOL"},
+        {Type::LABEL,     "LABEL"},
+        {Type::VARIABLE,  "VARIABLE"},
+        {Type::STRING,    "STRING"},
+        {Type::NUMBER,    "NUMBER"},
+        {Type::KEYWORD,   "KEYWORD"},
+        {Type::BOOLEAN,   "BOOLEAN"},
+};
+
 set<string> KEYWORDS = {
         "car", "cdr", "cons", "cond", "if", "else", "begin",
         "+", "-", "*", "/", "=", "%", "pow",
@@ -269,6 +286,8 @@ std::vector<HandleOrStr> &SchemeObject::getChildrenHosesOrBodies(shared_ptr<Sche
         return static_pointer_cast<ApplicationObject>(schemeObjPtr)->childrenHoses;
     } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE) {
         return static_pointer_cast<UnquoteObject>(schemeObjPtr)->childrenHoses;
+    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUOTE) {
+        return static_pointer_cast<QuoteObject>(schemeObjPtr)->childrenHoses;
     } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUASIQUOTE) {
         return static_pointer_cast<QuasiquoteObject>(schemeObjPtr)->childrenHoses;
     } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {

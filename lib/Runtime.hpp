@@ -89,13 +89,13 @@ public:
 
     void ailOr();
 
-    void ailIseq();
+    void ailIsEq();
 
     void ailIsnull();
 
     void ailIsatom();
 
-    void ailIslist();
+    void ailIsList();
 
     void ailIsnumber();
 
@@ -127,6 +127,18 @@ public:
     void output(string outputStr, bool is_with_endl);
 
     void output(string outputStr);
+
+    void ailCar();
+
+    void ailCdr();
+
+    void ailCons();
+
+    void ailIfTrue();
+
+    void ailIfFalse();
+
+    void ailGoto();
 };
 
 
@@ -205,7 +217,13 @@ void Runtime::execute() {
         else if (mnemonic == "call") { this->ailCall(instruction); }
         else if (mnemonic == "tailcall") { this->ailTailCall(instruction); }
         else if (mnemonic == "return") { this->ailReturn(); }
-        else if (mnemonic == "halt") { this->ailHalt(); }
+        else if (mnemonic == "iftrue") { this->ailIfTrue(); }
+        else if (mnemonic == "iffalse") { this->ailIfFalse(); }
+        else if (mnemonic == "goto") { this->ailGoto(); }
+
+        else if (mnemonic == "car") { this->ailCar(); }
+        else if (mnemonic == "cdr") { this->ailCdr(); }
+        else if (mnemonic == "cons") { this->ailCons(); }
 
         else if (mnemonic == "add") { this->ailAdd(); }
         else if (mnemonic == "sub") { this->ailSub(); }
@@ -221,10 +239,10 @@ void Runtime::execute() {
         else if (mnemonic == "not") { this->ailNot(); }
         else if (mnemonic == "and") { this->ailAnd(); }
         else if (mnemonic == "or") { this->ailOr(); }
-        else if (mnemonic == "eq?") { this->ailIseq(); }
+        else if (mnemonic == "eq?") { this->ailIsEq(); }
         else if (mnemonic == "null?") { this->ailIsnull(); }
         else if (mnemonic == "atom?") { this->ailIsatom(); }
-        else if (mnemonic == "list?") { this->ailIslist(); }
+        else if (mnemonic == "list?") { this->ailIsList(); }
         else if (mnemonic == "number?") { this->ailIsnumber(); }
 
 
@@ -677,7 +695,64 @@ void Runtime::ailOr() {
     this->currentProcessPtr->step();
 }
 
-void Runtime::ailIseq() {
+void Runtime::ailIsEq() {
+    string operand1 = this->currentProcessPtr->popOperand();
+    string operand2 = this->currentProcessPtr->popOperand();
+
+    Type operand1Type = typeOfStr(operand1);
+    Type operand2Type = typeOfStr(operand2);
+
+    if (operand1Type != operand2Type) {
+        this->currentProcessPtr->pushOperand("#f");
+        this->currentProcessPtr->step();
+        return;
+    }
+
+    if (operand1Type == Type::HANDLE) {
+        auto schemeObjPtr1 = this->currentProcessPtr->heap.get(operand1);
+        auto schemeObjPtr2 = this->currentProcessPtr->heap.get(operand2);
+
+        if (schemeObjPtr1->schemeObjectType != schemeObjPtr2->schemeObjectType) {
+            this->currentProcessPtr->pushOperand("#f");
+            this->currentProcessPtr->step();
+            return;
+        }
+
+        if (schemeObjPtr1->schemeObjectType == SchemeObjectType::QUOTE) {
+            auto hoses1 = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr1);
+            auto hoses2 = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr2);
+
+            if (hoses1.size() != hoses2.size()) {
+                this->currentProcessPtr->pushOperand("#f");
+                this->currentProcessPtr->step();
+                return;
+            }
+
+            for (int i = 0; i < hoses1.size(); ++i) {
+                if (hoses1[i] != hoses2[i]) {
+                    this->currentProcessPtr->pushOperand("#f");
+                    this->currentProcessPtr->step();
+                    return;
+                }
+            }
+
+            this->currentProcessPtr->pushOperand("#t");
+            this->currentProcessPtr->step();
+            return;
+        }
+
+    }
+
+    if (utils::makeSet<Type>(5, Type::BOOLEAN, Type::KEYWORD, Type::NUMBER, Type::STRING, Type::PORT).count(
+            operand1Type)) {
+        if (operand1 == operand2) {
+            this->currentProcessPtr->pushOperand("#t");
+        } else {
+            this->currentProcessPtr->pushOperand("#f");
+        }
+    }
+
+    this->currentProcessPtr->step();
 
 }
 
@@ -689,8 +764,18 @@ void Runtime::ailIsatom() {
 
 }
 
-void Runtime::ailIslist() {
-
+void Runtime::ailIsList() {
+    string argument = this->currentProcessPtr->popOperand();
+    if (typeOfStr(argument) == Type::HANDLE) {
+        auto schemeObjPtr = this->currentProcessPtr->heap.get(argument);
+        if (schemeObjPtr->schemeObjectType != SchemeObjectType::STRING) {
+            this->currentProcessPtr->pushOperand("#f");
+        } else {
+            this->currentProcessPtr->pushOperand("#t");
+        }
+    } else {
+        this->currentProcessPtr->pushOperand("#f");
+    }
 }
 
 void Runtime::ailIsnumber() {
@@ -713,6 +798,18 @@ void Runtime::ailDisplay() {
         if (schemeObjectPtr->schemeObjectType == SchemeObjectType::STRING) {
             auto stringObjPtr = static_pointer_cast<StringObject>(schemeObjectPtr);
             this->output(stringObjPtr->content);
+        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::QUOTE) {
+            string buffer = "(";
+            auto hoses = SchemeObject::getChildrenHosesOrBodies(schemeObjectPtr);
+            for (int i = 0; i < hoses.size(); ++i) {
+                buffer += hoses[i];
+                if (i != hoses.size() - 1) {
+                    buffer += " ";
+                } else {
+                    buffer += ")";
+                }
+            }
+            this->output(buffer);
         }
     } else if (argumentType == Type::NUMBER || argumentType == Type::BOOLEAN) {
         this->output(argument);
@@ -726,13 +823,13 @@ void Runtime::output(string outputStr) {
 }
 
 void Runtime::output(string outputStr, bool is_with_endl) {
-    if(this->outputMode == OutputMode::UNBUFFERED) {
-        if(is_with_endl) {
+    if (this->outputMode == OutputMode::UNBUFFERED) {
+        if (is_with_endl) {
             cout << outputStr << endl;
         } else {
             cout << outputStr;
         }
-    } else if(this->outputMode == OutputMode::BUFFERED) {
+    } else if (this->outputMode == OutputMode::BUFFERED) {
         this->outputBuffer.push_back(outputStr);
     }
 }
@@ -773,6 +870,59 @@ void Runtime::ailConcat() {
 
 void Runtime::ailDuplicate() {
 
+}
+
+void Runtime::ailCar() {
+
+}
+
+void Runtime::ailCdr() {
+
+}
+
+void Runtime::ailCons() {
+
+}
+
+void Runtime::ailIfTrue() {
+    string predicate = this->currentProcessPtr->popOperand();
+    Type predicateType = typeOfStr(predicate);
+
+    string argument = this->currentProcessPtr->currentInstruction().argument;
+    Type argumentType = typeOfStr(argument);
+
+    if (predicateType != Type::BOOLEAN) {
+        throw std::invalid_argument("[ailIfTrue] predicate should be Boolean");
+    }
+
+    if (argumentType == Type::LABEL) {
+        string label = argument;
+
+        if (predicate == "#t") {
+            int targetAddress = this->currentProcessPtr->labelAddressMap[label];
+            this->currentProcessPtr->gotoAddress(targetAddress);
+        } else {
+            this->currentProcessPtr->step();
+        }
+    } else {
+        throw std::invalid_argument("[ailIfTrue] argument should be Label");
+    }
+}
+
+void Runtime::ailIfFalse() {
+
+}
+
+void Runtime::ailGoto() {
+    string argument = this->currentProcessPtr->currentInstruction().argument;
+    Type argumentType = typeOfStr(argument);
+    if (argumentType == Type::LABEL) {
+        string label = argument;
+        int targetAddress = this->currentProcessPtr->labelAddressMap[label];
+        this->currentProcessPtr->gotoAddress(targetAddress);
+    } else {
+        throw std::invalid_argument("[ailGoto] argument should be Label");
+    }
 }
 
 

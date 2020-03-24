@@ -248,6 +248,8 @@ public:
 
     int parseQuote(int index);
 
+    int parseQuoteSeq(int index);
+
     int parseUnquote(int index);
 
     int parseUnquoteTerm(int index);
@@ -285,27 +287,6 @@ int Parser::parseTerm(int index) {
         this->tokens[index + 1].string == "lambda") {
         this->parseLog("<Term> → <Lambda>");
         return this->parseLambda(index);
-    } else if (this->tokens[index].string == "(" && this->tokens[index + 1].string == "quote") {
-        this->parseLog("<Term> → <Quote>");
-        nextIndex = this->parseQuote(index + 1);
-        if (this->tokens[nextIndex].string == ")") { return nextIndex + 1; }
-        else {
-            throw runtime_error("[Error] quote 右侧括号未闭合。");
-        }
-    } else if (this->tokens[index].string == "(" && this->tokens[index + 1].string == "unquote") {
-        this->parseLog("<Term> → <Unquote>");
-        nextIndex = this->parseUnquote(index + 1);
-        if (this->tokens[nextIndex].string == ")") { return nextIndex + 1; }
-        else {
-            throw runtime_error("[Error] unquote 右侧括号未闭合。");
-        }
-    } else if (this->tokens[index].string == "(" && this->tokens[index + 1].string == "quasiquote") {
-        this->parseLog("<Term> → <Quasiquote>");
-        nextIndex = parseQuasiquote(index + 1);
-        if (this->tokens[nextIndex].string == ")") { return nextIndex + 1; }
-        else {
-            throw runtime_error("[Error] quasiquote 右侧括号未闭合。");
-        }
     } else if (this->tokens[index].string == "\'") {
         this->parseLog("<Term> → <Quote>");
         return this->parseQuote(index);
@@ -424,6 +405,8 @@ int Parser::parseBodyTerm(int index) {
 }
 
 int Parser::parseQuote(int index) {
+    // ( handled outside
+    // ( <quote> -> <quoteSeq>
     this->parseLog("<Quote> → ' ※1 <QuoteTerm> ※2");
     // Action1
     this->stateStack.push_back("QUOTE");
@@ -435,7 +418,20 @@ int Parser::parseQuote(int index) {
 
 int Parser::parseQuoteTerm(int index) {
     this->parseLog("<QuoteTerm> → <Term>");
-    return this->parseTerm(index);
+    Handle sListHandle = this->ast.heap.makeQuote(this->ast.moduleName, this->nodeStack.back());
+
+    this->nodeStack.push_back(sListHandle);
+
+    ast.handleSourceIndexesMap[sListHandle] = this->tokens[index].sourceIndex;
+    int nextIndex = this->parseTerm(index);
+
+    HandleOrStr childHos = nodeStack.back();
+    nodeStack.pop_back();
+
+    static_pointer_cast<QuoteObject>(this->ast.heap.get(sListHandle))->addChild("quote");
+    static_pointer_cast<QuoteObject>(this->ast.heap.get(sListHandle))->addChild(childHos);
+
+    return nextIndex;
 }
 
 int Parser::parseUnquote(int index) {
@@ -470,9 +466,15 @@ int Parser::parseQuasiquoteTerm(int index) {
 
 int Parser::parseSList(int index) {
     parseLog("<SList> → ( ※ <SListSeq> )");
+
+    if(this->tokens[index + 1].string == "quote") {
+        this->stateStack.push_back("QUOTE");
+    }
+
     string quoteType = this->stateStack.empty() ? "" : this->stateStack.back();
     // sListHandle maybe point to quote, unquote, quasiquote object
     Handle sListHandle;
+
 
     if (quoteType == "QUOTE") {
         sListHandle = this->ast.heap.makeQuote(this->ast.moduleName, this->nodeStack.back());
@@ -488,6 +490,10 @@ int Parser::parseSList(int index) {
 
     ast.handleSourceIndexesMap[sListHandle] = this->tokens[index].sourceIndex;
     int nextIndex = this->parseSListSeq(index + 1);
+
+    if(quoteType == "QUOTE") {
+        this->stateStack.pop_back();
+    }
 
     if (this->tokens[nextIndex].string == ")") {
         return nextIndex + 1;

@@ -276,7 +276,7 @@ void Compiler::compileDefine(Handle handle) {
 
     if (typeOfStr(childrenHoses[1]) != Type::VARIABLE) {
         throw std::runtime_error(
-                "[compileDefine] define's first argument " + childrenHoses[1] + " should be a variable");
+                "[compileDefine] define's first argument " + childrenHoses[1] + " should be a variable but not a " + TypeStrMap[typeOfStr(childrenHoses[1])]);
     }
 
     if (typeOfStr(childrenHoses[2]) == Type::HANDLE) {
@@ -441,7 +441,7 @@ void Compiler::compileIf(Handle handle) {
     // ----- True Branch -------
     this->addInstruction(trueLabel);
 
-    HandleOrStr trueBranch = childrenHoses[3];
+    HandleOrStr trueBranch = childrenHoses[2];
     this->compileHos(trueBranch);
     // ----- True Branch -------
 
@@ -569,9 +569,9 @@ void Compiler::beginCompile() {
         this->compileLambda(lambdaHandle);
     }
 
-//    for (auto &inst : this->ILCode) {
-//        cout << inst.instructionStr << endl;
-//    }
+    for (auto &inst : this->ILCode) {
+        cout << inst.instructionStr << endl;
+    }
 }
 
 
