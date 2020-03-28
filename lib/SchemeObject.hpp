@@ -93,6 +93,19 @@ void ApplicationObject::addChild(HandleOrStr childHos) {
     this->childrenHoses.push_back(childHos);
 }
 
+class ListObject : public SchemeObject {
+public:
+    ListObject(Handle parentHandle) : SchemeObject(SchemeObjectType::LIST, parentHandle) {};
+
+    vector<HandleOrStr> childrenHoses;
+
+    void addChild(HandleOrStr childHos);
+};
+
+void ListObject::addChild(HandleOrStr childHos) {
+    this->childrenHoses.push_back(childHos);
+}
+
 // [lambda, [param0, ... ], body0, ...]
 class LambdaObject : public SchemeObject {
 public:
@@ -292,6 +305,8 @@ std::vector<HandleOrStr> &SchemeObject::getChildrenHosesOrBodies(shared_ptr<Sche
         return static_pointer_cast<QuasiquoteObject>(schemeObjPtr)->childrenHoses;
     } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
         return static_pointer_cast<LambdaObject>(schemeObjPtr)->bodies;
+    } else if(schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
+        return static_pointer_cast<ListObject>(schemeObjPtr)->childrenHoses;
     }
     throw std::runtime_error("[getChildrenHoses] not a application, unquote or quasiquote");
 }

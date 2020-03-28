@@ -39,6 +39,8 @@ public:
     Handle makeUnquote(const string &prefix, Handle parentHandle);
 
     Handle makeQuasiquote(const string &prefix, Handle parentHandle);
+
+    Handle makeList(const string &prefix, Handle parentHandle);
 };
 
 
@@ -86,6 +88,12 @@ Handle Heap::makeLambda(const string &prefix, Handle parentHandle) {
 
 Handle Heap::makeApplication(const string &prefix, Handle parentHandle) {
     string handle = this->allocateHandle(prefix, SchemeObjectType::APPLICATION);
+    this->set(handle, std::shared_ptr<ApplicationObject>(new ApplicationObject(parentHandle)));
+    return handle;
+}
+
+Handle Heap::makeList(const string &prefix, Handle parentHandle) {
+    string handle = this->allocateHandle(prefix, SchemeObjectType::LIST);
     this->set(handle, std::shared_ptr<ApplicationObject>(new ApplicationObject(parentHandle)));
     return handle;
 }

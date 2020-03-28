@@ -70,7 +70,10 @@ namespace Lexer {
                             stringMatchFlag = true;
                             break;
                         } else if (code[i] == '\\' && i + 1 < code.size()) {
-                            resultStr += code[i] + code[i + 1];
+                            if (code[i + 1] != '"' && code[i + 1] != '\\') {
+                                resultStr += code[i];
+                            }
+                            resultStr += code[i + 1];
                             i += 2;
                         } else {
                             resultStr += code[i];

@@ -139,6 +139,8 @@ public:
     void ailIfFalse();
 
     void ailGoto();
+
+    vector<HandleOrStr> popOperandsInversely(int num);
 };
 
 
@@ -489,8 +491,8 @@ void Runtime::ailHalt() {
 //=================================================================
 
 void Runtime::ailAdd() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -505,8 +507,8 @@ void Runtime::ailAdd() {
 }
 
 void Runtime::ailSub() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -520,8 +522,8 @@ void Runtime::ailSub() {
 }
 
 void Runtime::ailDiv() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -535,8 +537,8 @@ void Runtime::ailDiv() {
 }
 
 void Runtime::ailMul() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -550,8 +552,8 @@ void Runtime::ailMul() {
 }
 
 void Runtime::ailMod() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -565,8 +567,8 @@ void Runtime::ailMod() {
 }
 
 void Runtime::ailPow() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -580,8 +582,8 @@ void Runtime::ailPow() {
 }
 
 void Runtime::ailEqn() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -597,8 +599,8 @@ void Runtime::ailEqn() {
 
 // >=
 void Runtime::ailGe() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -614,8 +616,8 @@ void Runtime::ailGe() {
 }
 
 void Runtime::ailLe() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -631,8 +633,8 @@ void Runtime::ailLe() {
 }
 
 void Runtime::ailGt() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -648,8 +650,8 @@ void Runtime::ailGt() {
 }
 
 void Runtime::ailLt() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -670,8 +672,8 @@ void Runtime::ailNot() {
 }
 
 void Runtime::ailAnd() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (operand1 == "#f" || operand2 == "#f") {
         this->currentProcessPtr->pushOperand("#f");
@@ -683,8 +685,8 @@ void Runtime::ailAnd() {
 }
 
 void Runtime::ailOr() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     if (operand1 == "#t" || operand2 == "#t") {
         this->currentProcessPtr->pushOperand("#t");
@@ -696,8 +698,8 @@ void Runtime::ailOr() {
 }
 
 void Runtime::ailIsEq() {
-    string operand1 = this->currentProcessPtr->popOperand();
     string operand2 = this->currentProcessPtr->popOperand();
+    string operand1 = this->currentProcessPtr->popOperand();
 
     Type operand1Type = typeOfStr(operand1);
     Type operand2Type = typeOfStr(operand2);
@@ -768,7 +770,7 @@ void Runtime::ailIsList() {
     string argument = this->currentProcessPtr->popOperand();
     if (typeOfStr(argument) == Type::HANDLE) {
         auto schemeObjPtr = this->currentProcessPtr->heap.get(argument);
-        if (schemeObjPtr->schemeObjectType != SchemeObjectType::STRING) {
+        if (schemeObjPtr->schemeObjectType != SchemeObjectType::LIST) {
             this->currentProcessPtr->pushOperand("#f");
         } else {
             this->currentProcessPtr->pushOperand("#t");
@@ -881,7 +883,19 @@ void Runtime::ailCdr() {
 }
 
 void Runtime::ailCons() {
+    // create list, and push it
+    // is actually push handle_to_list
 
+    Handle handle = this->currentProcessPtr->heap.makeList("runtime", TOP_NODE_HANDLE);
+    auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(handle));
+    int argumentNumber = stoi(this->currentProcessPtr->popOperand());
+    vector<HandleOrStr> hoses = this->popOperandsInversely(argumentNumber);
+    for(auto hos : hoses) {
+        listObjPtr->addChild(hos);
+
+    }
+    this->currentProcessPtr->pushOperand(handle);
+    this->currentProcessPtr->step();
 }
 
 void Runtime::ailIfTrue() {
@@ -923,6 +937,14 @@ void Runtime::ailGoto() {
     } else {
         throw std::invalid_argument("[ailGoto] argument should be Label");
     }
+}
+
+vector<HandleOrStr> Runtime::popOperandsInversely(int num) {
+    vector<HandleOrStr> buffer;
+    for (int j = 0; j < num; ++j) {
+        buffer.push_back(this->currentProcessPtr->popOperand());
+    }
+    return buffer;
 }
 
 

@@ -555,7 +555,7 @@ int Parser::parseSymbol(int index) {
                 this->nodeStack.push_back(currentTokenStr);
             } else if ((type == Type::VARIABLE || type == Type::KEYWORD || type == Type::PORT) &&
                        currentTokenStr != "quasiquote" && currentTokenStr != "quote" && currentTokenStr != "unquote") {
-                //quoted variable, keyword, port is pushed as symbol
+                //quoted variable, keyword, lambda, port is pushed as symbol
                 this->nodeStack.push_back("'" + currentTokenStr);
             } else { // 含boolean在内的变量、把柄等
                 this->nodeStack.push_back(currentTokenStr);

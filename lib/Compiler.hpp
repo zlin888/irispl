@@ -190,6 +190,13 @@ void Compiler::compileApplication(Handle handle) {
             if (this->primitiveInstructionMap.count(first)) {
                 this->addInstruction(this->primitiveInstructionMap[first]);
             } else {
+                if (first == "cons") {
+                    if(childrenHoses.size() == 1) {
+                        throw std::runtime_error(
+                                "[compileApplication] cons' arguments should more than 0.");
+                    }
+                    this->addInstruction(to_string(childrenHoses.size() - 1)); // the number of cons application arguments
+                }
                 this->addInstruction(first);
             }
         } else if (std::find(this->ast.tailcalls.begin(), this->ast.tailcalls.end(), handle) !=
@@ -276,7 +283,8 @@ void Compiler::compileDefine(Handle handle) {
 
     if (typeOfStr(childrenHoses[1]) != Type::VARIABLE) {
         throw std::runtime_error(
-                "[compileDefine] define's first argument " + childrenHoses[1] + " should be a variable but not a " + TypeStrMap[typeOfStr(childrenHoses[1])]);
+                "[compileDefine] define's first argument " + childrenHoses[1] + " should be a variable but not a " +
+                TypeStrMap[typeOfStr(childrenHoses[1])]);
     }
 
     if (typeOfStr(childrenHoses[2]) == Type::HANDLE) {
