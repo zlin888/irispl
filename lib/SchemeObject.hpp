@@ -95,15 +95,45 @@ void ApplicationObject::addChild(HandleOrStr childHos) {
 
 class ListObject : public SchemeObject {
 public:
+    bool isFake = false;
+    shared_ptr<ListObject> realListObjPtr = nullptr;
+    int currentIndex = 0;
+
     ListObject(Handle parentHandle) : SchemeObject(SchemeObjectType::LIST, parentHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
     void addChild(HandleOrStr childHos);
+
+    void pointTo(shared_ptr<ListObject> realListObjPtr, int index);
+
+    HandleOrStr car();
+
+    int size();
 };
+
+int ListObject::size() {
+    return this->realListObjPtr->childrenHoses.size() - currentIndex;
+}
+
+HandleOrStr ListObject::car() {
+    if (isFake) {
+        return realListObjPtr->childrenHoses[currentIndex];
+    } else {
+        return this->childrenHoses[0];
+    }
+}
 
 void ListObject::addChild(HandleOrStr childHos) {
     this->childrenHoses.push_back(childHos);
+}
+
+// when using cdr, we fake a new List, and make the new List point to the real List
+// reduce the cdr complexity
+void ListObject::pointTo(shared_ptr<ListObject> realListObjPtr, int index) {
+    this->isFake = true;
+    this->currentIndex = index;
+    this->realListObjPtr = realListObjPtr;
 }
 
 // [lambda, [param0, ... ], body0, ...]
@@ -305,7 +335,7 @@ std::vector<HandleOrStr> &SchemeObject::getChildrenHosesOrBodies(shared_ptr<Sche
         return static_pointer_cast<QuasiquoteObject>(schemeObjPtr)->childrenHoses;
     } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
         return static_pointer_cast<LambdaObject>(schemeObjPtr)->bodies;
-    } else if(schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
+    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
         return static_pointer_cast<ListObject>(schemeObjPtr)->childrenHoses;
     }
     throw std::runtime_error("[getChildrenHoses] not a application, unquote or quasiquote");

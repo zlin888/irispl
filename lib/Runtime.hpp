@@ -13,6 +13,8 @@
 
 using namespace std;
 
+string RUNTIME_PREFIX = "_!!!runtime_prefix!!!_";
+
 enum class OutputMode {
     BUFFERED, UNBUFFERED
 };
@@ -141,6 +143,10 @@ public:
     void ailGoto();
 
     vector<HandleOrStr> popOperandsInversely(int num);
+
+    void parseOutput(string argument);
+
+    string toStr(HandleOrStr hos);
 };
 
 
@@ -793,35 +799,37 @@ void Runtime::ailIsnumber() {
 
 void Runtime::ailDisplay() {
     string argument = this->currentProcessPtr->popOperand();
-    Type argumentType = typeOfStr(argument);
+    this->output(this->toStr(argument), true);
+    this->currentProcessPtr->step();
+}
 
-    if (argumentType == Type::HANDLE) {
-        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(argument);
+string Runtime::toStr(HandleOrStr hos) {
+    Type hosType = typeOfStr(hos);
+    if (hosType == Type::HANDLE) {
+        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
         if (schemeObjectPtr->schemeObjectType == SchemeObjectType::STRING) {
             auto stringObjPtr = static_pointer_cast<StringObject>(schemeObjectPtr);
-            this->output(stringObjPtr->content);
-        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::QUOTE) {
+            return stringObjPtr->content;
+        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::QUOTE ||
+                   schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
             string buffer = "(";
             auto hoses = SchemeObject::getChildrenHosesOrBodies(schemeObjectPtr);
             for (int i = 0; i < hoses.size(); ++i) {
-                buffer += hoses[i];
+                buffer += this->toStr(hoses[i]);
                 if (i != hoses.size() - 1) {
                     buffer += " ";
                 } else {
                     buffer += ")";
                 }
             }
-            this->output(buffer);
+            return buffer;
+        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+            return "<lambda:" + hos + ">";
         }
-    } else if (argumentType == Type::NUMBER || argumentType == Type::BOOLEAN) {
-        this->output(argument);
+    } else if (hosType == Type::NUMBER || hosType == Type::BOOLEAN) {
+        return hos;
     }
-
-    this->currentProcessPtr->step();
-}
-
-void Runtime::output(string outputStr) {
-    this->output(outputStr, true);
+    return "";
 }
 
 void Runtime::output(string outputStr, bool is_with_endl) {
@@ -875,24 +883,72 @@ void Runtime::ailDuplicate() {
 }
 
 void Runtime::ailCar() {
+    HandleOrStr hos = this->currentProcessPtr->popOperand();
+    Type hosType = typeOfStr(hos);
+
+    if (hosType == Type::HANDLE) {
+        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
+        if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
+            shared_ptr<ListObject> listObjStr = static_pointer_cast<ListObject>(schemeObjectPtr);
+            this->currentProcessPtr->pushOperand(listObjStr->car());
+        } else {
+            throw std::invalid_argument(
+                    "[ailCar] car's argument should be a List, but get a " + hos + " (" + TypeStrMap[hosType] + ") ");
+        }
+
+    } else {
+        throw std::invalid_argument(
+                "[ailCar] car's argument should be a List, but get a " + hos + " (" + TypeStrMap[hosType] + ") ");
+    }
 
 }
 
 void Runtime::ailCdr() {
+    HandleOrStr hos = this->currentProcessPtr->popOperand();
+    Type hosType = typeOfStr(hos);
 
+    if (hosType == Type::HANDLE) {
+        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
+        if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
+            shared_ptr<ListObject> listObjStr = static_pointer_cast<ListObject>(schemeObjectPtr);
+
+            if(listObjStr->size() == 1) {
+                this->currentProcessPtr->pushOperand(listObjStr->car());
+            } else {
+                Handle newListHandle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
+                auto newListObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(newListHandle));
+
+                if(listObjStr->isFake) {
+                    newListObjPtr->pointTo(listObjStr->realListObjPtr, listObjStr->currentIndex + 1);
+                } else {
+                    newListObjPtr->pointTo(listObjStr, 1);
+                }
+
+                this->currentProcessPtr->pushOperand(newListHandle);
+            }
+
+        } else {
+            throw std::invalid_argument(
+                    "[ailCdr] cdr's argument should be a List, but get a " + hos + " (" + TypeStrMap[hosType] + ") ");
+        }
+
+    } else {
+        throw std::invalid_argument(
+                "[ailCdr] cdr's argument should be a List, but get a " + hos + " (" + TypeStrMap[hosType] + ") ");
+    }
 }
 
 void Runtime::ailCons() {
     // create list, and push it
     // is actually push handle_to_list
 
-    Handle handle = this->currentProcessPtr->heap.makeList("runtime", TOP_NODE_HANDLE);
-    auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(handle));
-    int argumentNumber = stoi(this->currentProcessPtr->popOperand());
-    vector<HandleOrStr> hoses = this->popOperandsInversely(argumentNumber);
-    for(auto hos : hoses) {
-        listObjPtr->addChild(hos);
+    Handle handle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
+    shared_ptr<ListObject> listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(handle));
+    string argumentNum = this->currentProcessPtr->popOperand();
 
+    vector<HandleOrStr> hoses = this->popOperandsInversely(stoi(argumentNum));
+    for (auto hos : hoses) {
+        listObjPtr->addChild(hos);
     }
     this->currentProcessPtr->pushOperand(handle);
     this->currentProcessPtr->step();

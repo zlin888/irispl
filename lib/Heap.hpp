@@ -94,7 +94,7 @@ Handle Heap::makeApplication(const string &prefix, Handle parentHandle) {
 
 Handle Heap::makeList(const string &prefix, Handle parentHandle) {
     string handle = this->allocateHandle(prefix, SchemeObjectType::LIST);
-    this->set(handle, std::shared_ptr<ApplicationObject>(new ApplicationObject(parentHandle)));
+    this->set(handle, std::shared_ptr<ListObject>(new ListObject(parentHandle)));
     return handle;
 }
 

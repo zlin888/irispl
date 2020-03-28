@@ -195,7 +195,7 @@ void Compiler::compileApplication(Handle handle) {
                         throw std::runtime_error(
                                 "[compileApplication] cons' arguments should more than 0.");
                     }
-                    this->addInstruction(to_string(childrenHoses.size() - 1)); // the number of cons application arguments
+                    this->addInstruction("push " + to_string(childrenHoses.size() - 1)); // the number of cons application arguments
                 }
                 this->addInstruction(first);
             }
