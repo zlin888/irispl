@@ -1,4 +1,0 @@
-/Users/bytedance/CLionProjects/typed-scheme/CMakeFiles/rebuild_cache.dir
-/Users/bytedance/CLionProjects/typed-scheme/CMakeFiles/edit_cache.dir
-/Users/bytedance/CLionProjects/typed-scheme/CMakeFiles/iris.dir
-/Users/bytedance/CLionProjects/typed-scheme/CMakeFiles/main.dir
