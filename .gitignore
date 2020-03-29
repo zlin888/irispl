@@ -37,4 +37,11 @@ bin
 
 # JetBrain
 /cmake-build-debug/
+/cmake-build-release/
 /.idea
+/CMakeFiles
+
+
+.DS_Store
+iris
+iris.cbp

@@ -144,9 +144,9 @@ public:
 
     vector<HandleOrStr> popOperandsInversely(int num);
 
-    void parseOutput(string argument);
-
     string toStr(HandleOrStr hos);
+
+    void ailBegin();
 };
 
 
@@ -262,6 +262,7 @@ void Runtime::execute() {
         else if (mnemonic == "nop") { this->ailNop(); }
         else if (mnemonic == "pause") { this->ailPause(); }
         else if (mnemonic == "halt") { this->ailHalt(); }
+        else if (mnemonic == "begin") { this->ailBegin(); }
 
         else if (mnemonic == "set-child!") { this->ailSetchild(); }
         else if (mnemonic == "concat") { this->ailConcat(); }
@@ -784,6 +785,7 @@ void Runtime::ailIsList() {
     } else {
         this->currentProcessPtr->pushOperand("#f");
     }
+    this->currentProcessPtr->step();
 }
 
 void Runtime::ailIsnumber() {
@@ -826,10 +828,10 @@ string Runtime::toStr(HandleOrStr hos) {
         } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
             return "<lambda:" + hos + ">";
         }
-    } else if (hosType == Type::NUMBER || hosType == Type::BOOLEAN) {
+    } else if (hosType == Type::NUMBER || hosType == Type::BOOLEAN || hosType == Type::KEYWORD) {
         return hos;
     }
-    return "";
+    return hos;
 }
 
 void Runtime::output(string outputStr, bool is_with_endl) {
@@ -900,6 +902,7 @@ void Runtime::ailCar() {
         throw std::invalid_argument(
                 "[ailCar] car's argument should be a List, but get a " + hos + " (" + TypeStrMap[hosType] + ") ");
     }
+    this->currentProcessPtr->step();
 
 }
 
@@ -910,18 +913,30 @@ void Runtime::ailCdr() {
     if (hosType == Type::HANDLE) {
         shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
         if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
-            shared_ptr<ListObject> listObjStr = static_pointer_cast<ListObject>(schemeObjectPtr);
+            shared_ptr<ListObject> listObjPtr = static_pointer_cast<ListObject>(schemeObjectPtr);
 
-            if(listObjStr->size() == 1) {
-                this->currentProcessPtr->pushOperand(listObjStr->car());
+            if (listObjPtr->size() - 1 == 1) {
+                // create a fake list point the real list (with currentIndex + 1)
+                // * * * * * (list 1)
+                //   * * * * (cdr list1) -> fake list 1
+                Handle newListHandle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
+                auto newListObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(newListHandle));
+
+                if (listObjPtr->isFake) {
+                    newListObjPtr->pointTo(listObjPtr->realListObjPtr, listObjPtr->currentIndex + 1);
+                } else {
+                    newListObjPtr->pointTo(listObjPtr, 1);
+                }
+
+                this->currentProcessPtr->pushOperand(newListObjPtr->car());
             } else {
                 Handle newListHandle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
                 auto newListObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(newListHandle));
 
-                if(listObjStr->isFake) {
-                    newListObjPtr->pointTo(listObjStr->realListObjPtr, listObjStr->currentIndex + 1);
+                if (listObjPtr->isFake) {
+                    newListObjPtr->pointTo(listObjPtr->realListObjPtr, listObjPtr->currentIndex + 1);
                 } else {
-                    newListObjPtr->pointTo(listObjStr, 1);
+                    newListObjPtr->pointTo(listObjPtr, 1);
                 }
 
                 this->currentProcessPtr->pushOperand(newListHandle);
@@ -936,6 +951,7 @@ void Runtime::ailCdr() {
         throw std::invalid_argument(
                 "[ailCdr] cdr's argument should be a List, but get a " + hos + " (" + TypeStrMap[hosType] + ") ");
     }
+    this->currentProcessPtr->step();
 }
 
 void Runtime::ailCons() {
@@ -980,6 +996,28 @@ void Runtime::ailIfTrue() {
 }
 
 void Runtime::ailIfFalse() {
+    string predicate = this->currentProcessPtr->popOperand();
+    Type predicateType = typeOfStr(predicate);
+
+    string argument = this->currentProcessPtr->currentInstruction().argument;
+    Type argumentType = typeOfStr(argument);
+
+    if (predicateType != Type::BOOLEAN) {
+        throw std::invalid_argument("[ailIfFalse] predicate should be Boolean");
+    }
+
+    if (argumentType == Type::LABEL) {
+        string label = argument;
+
+        if (predicate == "#f") {
+            int targetAddress = this->currentProcessPtr->labelAddressMap[label];
+            this->currentProcessPtr->gotoAddress(targetAddress);
+        } else {
+            this->currentProcessPtr->step();
+        }
+    } else {
+        throw std::invalid_argument("[ailIfFalse] argument should be Label");
+    }
 
 }
 
@@ -998,9 +1036,13 @@ void Runtime::ailGoto() {
 vector<HandleOrStr> Runtime::popOperandsInversely(int num) {
     vector<HandleOrStr> buffer;
     for (int j = 0; j < num; ++j) {
-        buffer.push_back(this->currentProcessPtr->popOperand());
+        buffer.insert(buffer.begin(), this->currentProcessPtr->popOperand());
     }
     return buffer;
+}
+
+void Runtime::ailBegin() {
+    this->currentProcessPtr->step();
 }
 
 

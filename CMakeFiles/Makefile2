@@ -53,13 +53,13 @@ CMAKE_BINARY_DIR = /Users/bytedance/CLionProjects/typed-scheme
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/typed_scheme.dir/all
+all: CMakeFiles/iris.dir/all
 all: CMakeFiles/main.dir/all
 
 .PHONY : all
 
 # The main recursive "clean" target.
-clean: CMakeFiles/typed_scheme.dir/clean
+clean: CMakeFiles/iris.dir/clean
 clean: CMakeFiles/main.dir/clean
 
 .PHONY : clean
@@ -70,31 +70,31 @@ preinstall:
 .PHONY : preinstall
 
 #=============================================================================
-# Target rules for target CMakeFiles/typed_scheme.dir
+# Target rules for target CMakeFiles/iris.dir
 
 # All Build rule for target.
-CMakeFiles/typed_scheme.dir/all:
-	$(MAKE) -f CMakeFiles/typed_scheme.dir/build.make CMakeFiles/typed_scheme.dir/depend
-	$(MAKE) -f CMakeFiles/typed_scheme.dir/build.make CMakeFiles/typed_scheme.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/bytedance/CLionProjects/typed-scheme/CMakeFiles --progress-num=3,4 "Built target typed_scheme"
-.PHONY : CMakeFiles/typed_scheme.dir/all
+CMakeFiles/iris.dir/all:
+	$(MAKE) -f CMakeFiles/iris.dir/build.make CMakeFiles/iris.dir/depend
+	$(MAKE) -f CMakeFiles/iris.dir/build.make CMakeFiles/iris.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/bytedance/CLionProjects/typed-scheme/CMakeFiles --progress-num=1,2 "Built target iris"
+.PHONY : CMakeFiles/iris.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/typed_scheme.dir/rule: cmake_check_build_system
+CMakeFiles/iris.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/bytedance/CLionProjects/typed-scheme/CMakeFiles 2
-	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/typed_scheme.dir/all
+	$(MAKE) -f CMakeFiles/Makefile2 CMakeFiles/iris.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/bytedance/CLionProjects/typed-scheme/CMakeFiles 0
-.PHONY : CMakeFiles/typed_scheme.dir/rule
+.PHONY : CMakeFiles/iris.dir/rule
 
 # Convenience name for target.
-typed_scheme: CMakeFiles/typed_scheme.dir/rule
+iris: CMakeFiles/iris.dir/rule
 
-.PHONY : typed_scheme
+.PHONY : iris
 
 # clean rule for target.
-CMakeFiles/typed_scheme.dir/clean:
-	$(MAKE) -f CMakeFiles/typed_scheme.dir/build.make CMakeFiles/typed_scheme.dir/clean
-.PHONY : CMakeFiles/typed_scheme.dir/clean
+CMakeFiles/iris.dir/clean:
+	$(MAKE) -f CMakeFiles/iris.dir/build.make CMakeFiles/iris.dir/clean
+.PHONY : CMakeFiles/iris.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/main.dir
@@ -103,7 +103,7 @@ CMakeFiles/typed_scheme.dir/clean:
 CMakeFiles/main.dir/all:
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/depend
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/bytedance/CLionProjects/typed-scheme/CMakeFiles --progress-num=1,2 "Built target main"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/Users/bytedance/CLionProjects/typed-scheme/CMakeFiles --progress-num=3,4 "Built target main"
 .PHONY : CMakeFiles/main.dir/all
 
 # Build rule for subdir invocation for target.

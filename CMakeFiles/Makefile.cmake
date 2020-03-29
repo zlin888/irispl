@@ -49,6 +49,6 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/typed_scheme.dir/DependInfo.cmake"
+  "CMakeFiles/iris.dir/DependInfo.cmake"
   "CMakeFiles/main.dir/DependInfo.cmake"
   )

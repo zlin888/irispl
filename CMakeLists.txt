@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(typed_scheme)
+project(iris)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -12,4 +12,4 @@ link_directories(${Boost_LIBRARY_DIR})
 add_executable(main main.cpp lib/Parser.hpp lib/Heap.hpp lib/Analyser.hpp lib/Compiler.hpp)
 target_link_libraries( main ${Boost_LIBRARIES} )
 
-add_executable(typed_scheme main.cpp)
+add_executable(iris main.cpp)

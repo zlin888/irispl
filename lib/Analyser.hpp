@@ -163,7 +163,7 @@ void Analyser::scopeAnalyse() {
                     string variable = applicationObjPtr->childrenHoses[1];
                     scopes[parentLambdaHandle].addBoundVariables(variable);
                 } else {
-                    throw std::runtime_error("[scope analysis] error in 'define'");
+                    throw std::runtime_error("[scope analysis] error in 'define', where " + handle + "'s parent lambda is not the top one");
                 }
             }
         }

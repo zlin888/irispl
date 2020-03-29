@@ -111,17 +111,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named typed_scheme
+# Target rules for targets named iris
 
 # Build rule for target.
-typed_scheme: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 typed_scheme
-.PHONY : typed_scheme
+iris: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 iris
+.PHONY : iris
 
 # fast build rule for target.
-typed_scheme/fast:
-	$(MAKE) -f CMakeFiles/typed_scheme.dir/build.make CMakeFiles/typed_scheme.dir/build
-.PHONY : typed_scheme/fast
+iris/fast:
+	$(MAKE) -f CMakeFiles/iris.dir/build.make CMakeFiles/iris.dir/build
+.PHONY : iris/fast
 
 #=============================================================================
 # Target rules for targets named main
@@ -142,7 +142,7 @@ main.o: main.cpp.o
 
 # target to build an object file
 main.cpp.o:
-	$(MAKE) -f CMakeFiles/typed_scheme.dir/build.make CMakeFiles/typed_scheme.dir/main.cpp.o
+	$(MAKE) -f CMakeFiles/iris.dir/build.make CMakeFiles/iris.dir/main.cpp.o
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.cpp.o
 .PHONY : main.cpp.o
 
@@ -152,7 +152,7 @@ main.i: main.cpp.i
 
 # target to preprocess a source file
 main.cpp.i:
-	$(MAKE) -f CMakeFiles/typed_scheme.dir/build.make CMakeFiles/typed_scheme.dir/main.cpp.i
+	$(MAKE) -f CMakeFiles/iris.dir/build.make CMakeFiles/iris.dir/main.cpp.i
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.cpp.i
 .PHONY : main.cpp.i
 
@@ -162,7 +162,7 @@ main.s: main.cpp.s
 
 # target to generate assembly for a file
 main.cpp.s:
-	$(MAKE) -f CMakeFiles/typed_scheme.dir/build.make CMakeFiles/typed_scheme.dir/main.cpp.s
+	$(MAKE) -f CMakeFiles/iris.dir/build.make CMakeFiles/iris.dir/main.cpp.s
 	$(MAKE) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/main.cpp.s
 .PHONY : main.cpp.s
 
@@ -174,7 +174,7 @@ help:
 	@echo "... depend"
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
-	@echo "... typed_scheme"
+	@echo "... iris"
 	@echo "... main"
 	@echo "... main.o"
 	@echo "... main.i"

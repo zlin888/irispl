@@ -113,7 +113,12 @@ public:
 };
 
 int ListObject::size() {
-    return this->realListObjPtr->childrenHoses.size() - currentIndex;
+    if(this->isFake) {
+        return this->realListObjPtr->childrenHoses.size() - currentIndex;
+    } else {
+        return this->childrenHoses.size();
+    }
+
 }
 
 HandleOrStr ListObject::car() {
