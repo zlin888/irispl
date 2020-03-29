@@ -21,5 +21,8 @@
 
 (utils.show j)
 
-(display (let 12))
+(display ((lambda (var1 var2) (+ var1 var2)) 13 (+ 12 13)))
+
+
+
 

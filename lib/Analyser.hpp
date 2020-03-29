@@ -154,7 +154,7 @@ void Analyser::scopeAnalyse() {
         } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
             auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
             if (applicationObjPtr->childrenHoses[0] == "define") {
-                // define will init variable, therefore, here, we can find out some of the scope of some varaible
+                // define will init variable, therefore, here, we can find out some of the scope of variables
                 Handle parentLambdaHandle = getParentLambdaHandle(handle);
 
                 // code is like ( (lambda () (define xxxx xxx) ))
@@ -163,8 +163,18 @@ void Analyser::scopeAnalyse() {
                     string variable = applicationObjPtr->childrenHoses[1];
                     scopes[parentLambdaHandle].addBoundVariables(variable);
                 } else {
-                    throw std::runtime_error("[scope analysis] error in 'define', where " + handle + "'s parent lambda is not the top one");
+                    throw std::runtime_error("[scope analysis] error in 'define', where " + handle + "doesn't have parent lambda ");
                 }
+            } else if (applicationObjPtr->childrenHoses[0] == "let") {
+                Handle parentLambdaHandle = getParentLambdaHandle(handle);
+
+                if (parentLambdaHandle != "") {
+                    string variable = applicationObjPtr->childrenHoses[1];
+                    scopes[parentLambdaHandle].addBoundVariables(variable);
+                } else {
+                    throw std::runtime_error("[scope analysis] error in 'let', where " + handle + "doesn't have parent lambda ");
+                }
+
             }
         }
     }

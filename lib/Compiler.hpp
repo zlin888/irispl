@@ -212,7 +212,7 @@ void Compiler::compileApplication(Handle handle) {
             }
         } else {
             if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
-                this->addInstruction("call " + first);
+                this->addInstruction("call @" + first);
             } else if (firstType == Type::VARIABLE) {
                 // include native
                 this->addInstruction("call " + first);
