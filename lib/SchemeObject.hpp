@@ -36,13 +36,14 @@ map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
 
 class SchemeObject {
 public:
-    SchemeObject(SchemeObjectType schemeObjectType, Handle parentHandle) : schemeObjectType(schemeObjectType),
-                                                                           parentHandle(parentHandle) {};
+    SchemeObject(SchemeObjectType schemeObjectType, Handle parentHandle, Handle selfHandle) : schemeObjectType(schemeObjectType),
+                                                                           parentHandle(parentHandle), selfHandle(selfHandle) {};
 
     SchemeObject(SchemeObjectType schemeObjectType) : schemeObjectType(schemeObjectType) {};
 
     SchemeObjectType schemeObjectType;
     Handle parentHandle;
+    Handle selfHandle;
 
     static std::vector<HandleOrStr> &getChildrenHosesOrBodies(shared_ptr<SchemeObject> schemeObjPtr);
 };
@@ -82,7 +83,7 @@ public:
 
 class ApplicationObject : public SchemeObject {
 public:
-    ApplicationObject(Handle parentHandle) : SchemeObject(SchemeObjectType::APPLICATION, parentHandle) {};
+    ApplicationObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::APPLICATION, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
@@ -99,7 +100,7 @@ public:
     shared_ptr<ListObject> realListObjPtr = nullptr;
     int currentIndex = 0;
 
-    ListObject(Handle parentHandle) : SchemeObject(SchemeObjectType::LIST, parentHandle) {};
+    ListObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::LIST, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
@@ -144,7 +145,7 @@ void ListObject::pointTo(shared_ptr<ListObject> realListObjPtr, int index) {
 // [lambda, [param0, ... ], body0, ...]
 class LambdaObject : public SchemeObject {
 public:
-    LambdaObject(Handle parentHandle) : SchemeObject(SchemeObjectType::LAMBDA, parentHandle) {};
+    LambdaObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::LAMBDA, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> bodies;
     vector<Handle> parameters;
@@ -190,7 +191,7 @@ void LambdaObject::setBodies(vector<HandleOrStr> newBodies) {
 
 class QuoteObject : public SchemeObject {
 public:
-    QuoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUOTE, parentHandle) {};
+    QuoteObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::QUOTE, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
@@ -204,7 +205,7 @@ void QuoteObject::addChild(HandleOrStr childHos) {
 
 class QuasiquoteObject : public SchemeObject {
 public:
-    QuasiquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::QUASIQUOTE, parentHandle) {};
+    QuasiquoteObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::QUASIQUOTE, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
@@ -217,7 +218,7 @@ void QuasiquoteObject::addChild(HandleOrStr childHos) {
 
 class UnquoteObject : public SchemeObject {
 public:
-    UnquoteObject(Handle parentHandle) : SchemeObject(SchemeObjectType::UNQUOTE, parentHandle) {};
+    UnquoteObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::UNQUOTE, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 

@@ -8,6 +8,7 @@
 #include "SchemeObject.hpp"
 #include "Parser.hpp"
 #include "Utils.hpp"
+#include "Transfer.hpp"
 #include <map>
 #include <set>
 
@@ -165,16 +166,6 @@ void Analyser::scopeAnalyse() {
                 } else {
                     throw std::runtime_error("[scope analysis] error in 'define', where " + handle + "doesn't have parent lambda ");
                 }
-            } else if (applicationObjPtr->childrenHoses[0] == "let") {
-                Handle parentLambdaHandle = getParentLambdaHandle(handle);
-
-                if (parentLambdaHandle != "") {
-                    string variable = applicationObjPtr->childrenHoses[1];
-                    scopes[parentLambdaHandle].addBoundVariables(variable);
-                } else {
-                    throw std::runtime_error("[scope analysis] error in 'let', where " + handle + "doesn't have parent lambda ");
-                }
-
             }
         }
     }
@@ -271,7 +262,10 @@ void Analyser::tailCallAnalyse() {
 
 }
 
+
+
 AST Analyser::analyse(AST ast) {
+    Transfer::transfer(ast);
     Analyser analyser(ast);
     analyser.scopeAnalyse();
     // TODO: tail call analyse

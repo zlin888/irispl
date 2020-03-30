@@ -18,6 +18,7 @@
 #include "Heap.hpp"
 #include "Analyser.hpp"
 #include "Compiler.hpp"
+#include "Transfer.hpp"
 
 using namespace std;
 

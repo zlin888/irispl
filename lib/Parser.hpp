@@ -54,18 +54,23 @@ public:
     shared_ptr<SchemeObject> get(Handle handle);
 
     bool isNativeCall(string nativeCall);
+
+    void addLambdaHandle(Handle handle);
 };
 
 shared_ptr<SchemeObject> AST::get(Handle handle) {
     try {
         return this->heap.get(handle);
     } catch (exception &e){
-        int index = this->handleSourceIndexesMap[handle];
-        int left = index - 10 >= 0 ? index - 10 : 0;
-        int right = index + 10 < this->source.size() ? index + 10 : this->source.size() - 1;
-        cout << to_string(index) << endl;
-        cout << this->source.substr(left, right) << endl;
         throw e;
+
+        // TODO: use this code to show the compile error context!!
+//        int index = this->handleSourceIndexesMap[handle];
+//        int left = index - 10 >= 0 ? index - 10 : 0;
+//        int right = index + 10 < this->source.size() ? index + 10 : this->source.size() - 1;
+//        cout << to_string(index) << endl;
+//        cout << this->source.substr(left, right) << endl;
+//        throw e;
     }
 }
 
@@ -205,10 +210,9 @@ bool AST::isNativeCall(string nativeCall) {
 
 }
 
-//AST::AST(const AST &ast) : heap(ast.heap), moduleName(ast.moduleName), source(ast.source),
-//                           nodeSourceIndexesMap(ast.nodeSourceIndexesMap), moduleAliasPathMap(ast.moduleAliasPathMap),
-//                           natives(ast.natives), varUniqueOriginNameMap(ast.varUniqueOriginNameMap),
-//                           definedVarUniqueOriginNameMap(ast.definedVarUniqueOriginNameMap) {}
+void AST::addLambdaHandle(Handle handle) {
+    this->lambdaHandles.push_back(handle);
+}
 
 class Parser {
 public:

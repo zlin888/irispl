@@ -82,37 +82,37 @@ Handle Heap::allocateHandle(const string &prefix, SchemeObjectType schemeObjectT
 Handle Heap::makeLambda(const string &prefix, Handle parentHandle) {
     // NOTE 每个节点把柄都带有模块全限定名，这样做的目的是：不必在AST融合过程中调整每个AST的把柄。下同。
     Handle handle = this->allocateHandle(prefix, SchemeObjectType::LAMBDA);
-    this->set(handle, std::shared_ptr<LambdaObject>(new LambdaObject(parentHandle)));
+    this->set(handle, std::shared_ptr<LambdaObject>(new LambdaObject(parentHandle, handle)));
     return handle;
 }
 
 Handle Heap::makeApplication(const string &prefix, Handle parentHandle) {
     string handle = this->allocateHandle(prefix, SchemeObjectType::APPLICATION);
-    this->set(handle, std::shared_ptr<ApplicationObject>(new ApplicationObject(parentHandle)));
+    this->set(handle, std::shared_ptr<ApplicationObject>(new ApplicationObject(parentHandle, handle)));
     return handle;
 }
 
 Handle Heap::makeList(const string &prefix, Handle parentHandle) {
     string handle = this->allocateHandle(prefix, SchemeObjectType::LIST);
-    this->set(handle, std::shared_ptr<ListObject>(new ListObject(parentHandle)));
+    this->set(handle, std::shared_ptr<ListObject>(new ListObject(parentHandle, handle)));
     return handle;
 }
 
 Handle Heap::makeQuote(const string &prefix, Handle parentHandle) {
     string handle = this->allocateHandle(prefix, SchemeObjectType::QUOTE);
-    this->set(handle, std::shared_ptr<QuoteObject>(new QuoteObject(parentHandle)));
+    this->set(handle, std::shared_ptr<QuoteObject>(new QuoteObject(parentHandle, handle)));
     return handle;
 }
 
 Handle Heap::makeUnquote(const string &prefix, Handle parentHandle) {
     string handle = this->allocateHandle(prefix, SchemeObjectType::QUOTE);
-    this->set(handle, std::shared_ptr<UnquoteObject>(new UnquoteObject(parentHandle)));
+    this->set(handle, std::shared_ptr<UnquoteObject>(new UnquoteObject(parentHandle, handle)));
     return handle;
 }
 
 Handle Heap::makeQuasiquote(const string &prefix, Handle parentHandle) {
     string handle = this->allocateHandle(prefix, SchemeObjectType::QUOTE);
-    this->set(handle, std::shared_ptr<QuasiquoteObject>(new QuasiquoteObject(parentHandle)));
+    this->set(handle, std::shared_ptr<QuasiquoteObject>(new QuasiquoteObject(parentHandle, handle)));
     return handle;
 }
 
