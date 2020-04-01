@@ -147,6 +147,8 @@ public:
     string toStr(HandleOrStr hos);
 
     void ailBegin();
+
+    void ailIsPair();
 };
 
 
@@ -252,6 +254,7 @@ void Runtime::execute() {
         else if (mnemonic == "atom?") { this->ailIsatom(); }
         else if (mnemonic == "list?") { this->ailIsList(); }
         else if (mnemonic == "number?") { this->ailIsnumber(); }
+        else if (mnemonic == "pair?") { this->ailIsPair(); }
 
 
         else if (mnemonic == "fork") { this->ailFork(); }
@@ -788,6 +791,27 @@ void Runtime::ailIsList() {
     this->currentProcessPtr->step();
 }
 
+void Runtime::ailIsPair() {
+    string argument = this->currentProcessPtr->popOperand();
+    if (typeOfStr(argument) == Type::HANDLE) {
+        auto schemeObjPtr = this->currentProcessPtr->heap.get(argument);
+        if (schemeObjPtr->schemeObjectType != SchemeObjectType::LIST) {
+            this->currentProcessPtr->pushOperand("#f");
+        } else {
+            auto listObjPtr = static_pointer_cast<ListObject>(schemeObjPtr);
+            if(listObjPtr->size() == 0) {
+                this->currentProcessPtr->pushOperand("#f");
+            } else {
+                this->currentProcessPtr->pushOperand("#t");
+            }
+        }
+    } else {
+        this->currentProcessPtr->pushOperand("#f");
+    }
+    this->currentProcessPtr->step();
+
+}
+
 void Runtime::ailIsnumber() {
     string operand = this->currentProcessPtr->popOperand();
     this->currentProcessPtr->pushOperand(typeOfStr(operand) == Type::NUMBER ? "#t" : "#f");
@@ -823,6 +847,9 @@ string Runtime::toStr(HandleOrStr hos) {
                 } else {
                     buffer += ")";
                 }
+            }
+            if(hoses.size() == 0) {
+                buffer += ")";
             }
             return buffer;
         } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
@@ -915,32 +942,17 @@ void Runtime::ailCdr() {
         if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
             shared_ptr<ListObject> listObjPtr = static_pointer_cast<ListObject>(schemeObjectPtr);
 
-            if (listObjPtr->size() - 1 == 1) {
-                // create a fake list point the real list (with currentIndex + 1)
-                // * * * * * (list 1)
-                //   * * * * (cdr list1) -> fake list 1
-                Handle newListHandle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
-                auto newListObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(newListHandle));
 
-                if (listObjPtr->isFake) {
-                    newListObjPtr->pointTo(listObjPtr->realListObjPtr, listObjPtr->currentIndex + 1);
-                } else {
-                    newListObjPtr->pointTo(listObjPtr, 1);
-                }
+            Handle newListHandle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
+            auto newListObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(newListHandle));
 
-                this->currentProcessPtr->pushOperand(newListObjPtr->car());
+            if (listObjPtr->isFake) {
+                newListObjPtr->pointTo(listObjPtr->realListObjPtr, listObjPtr->currentIndex + 1);
             } else {
-                Handle newListHandle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
-                auto newListObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(newListHandle));
-
-                if (listObjPtr->isFake) {
-                    newListObjPtr->pointTo(listObjPtr->realListObjPtr, listObjPtr->currentIndex + 1);
-                } else {
-                    newListObjPtr->pointTo(listObjPtr, 1);
-                }
-
-                this->currentProcessPtr->pushOperand(newListHandle);
+                newListObjPtr->pointTo(listObjPtr, 1);
             }
+
+            this->currentProcessPtr->pushOperand(newListHandle);
 
         } else {
             throw std::invalid_argument(
@@ -1044,6 +1056,8 @@ vector<HandleOrStr> Runtime::popOperandsInversely(int num) {
 void Runtime::ailBegin() {
     this->currentProcessPtr->step();
 }
+
+
 
 
 #endif // !RUNTIME_HPP

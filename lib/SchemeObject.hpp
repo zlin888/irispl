@@ -295,7 +295,7 @@ set<string> KEYWORDS = {
         "car", "cdr", "cons", "cond", "if", "else", "begin",
         "+", "-", "*", "/", "=", "%", "pow",
         "and", "or", "not", ">", "<", ">=", "<=", "eq?",
-        "define", "set!", "null?", "atom?", "list?", "number?",
+        "define", "set!", "null?", "atom?", "list?", "number?", "pair?",
         "display", "newline",
         "write", "read",
         "call/cc",
