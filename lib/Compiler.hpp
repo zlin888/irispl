@@ -177,7 +177,7 @@ void Compiler::compileApplication(Handle handle) {
         return;
     } else if (utils::makeSet<Type>(3, Type::HANDLE, Type::VARIABLE, Type::KEYWORD).count(firstType)) {
         // handle parameters
-        for (int i = 1; i < childrenHoses.size(); ++i) {
+        for (int i = childrenHoses.size() - 1 ; i >= 1; i--) {
             this->compileHos(childrenHoses[i]);
         }
 

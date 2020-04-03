@@ -1,7 +1,11 @@
-(display (let (
-        (var1 12) (var2 99))
-        (+ var1 var2)))
+(define make-simple-cell
+    (lambda (value)
+        (lambda (selector)
+            (cond ((eq? selector 'fetch) (lambda () value))
+                  ((eq? selector 'store!) (lambda (new-value) (set! value new-value)))
+                  ((eq? selector 'cell?) (lambda () #t))
+                  (else #f)))))
 
-(display (pair? (cdr (cdr (cons 11 12)))))
-
-(lambda (x y . others) (+ x y))
+(define a-cell (make-simple-cell 13))
+((a-cell 'store!) 21)
+(display ((a-cell 'fetch)))
