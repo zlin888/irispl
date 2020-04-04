@@ -23,3 +23,7 @@ equivalent to:
 (function argument0 argument1 ......)
 ```
 
+
+# Develop Manual
+## some bullets 
+* Compile and VM push-store principle: always push inversely and store in order
