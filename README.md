@@ -4,14 +4,21 @@ Yet another lisp-language. Typed-scheme in C++ VM
 # User Manual
 
 ## Let
+lexical binding: variable will be defined can have init as default value. the scope of these varibles is inside the let 
+application
 general form:
 ```
 (let ((variable init)
       (variable init)
       (expression)))
 ```
-lexical binding: variable will be defined can have init as default value. the scope of these varibles is inside the let 
-application
+
+## Function Arbitray Arguments Supported
+general form:
+```
+(lambda (arg0 arg1 . agrs)
+    (use-agrs-as-list))
+```
 
 ## Apply
 general form:
@@ -20,7 +27,7 @@ general form:
 ```
 equivalent to:
 ```
-(function argument0 argument1 ......)
+(function arg0 arg1 ... argX)
 ```
 
 
