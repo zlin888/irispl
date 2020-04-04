@@ -302,7 +302,7 @@ set<string> KEYWORDS = {
         "import", "native",
         "fork",
         "quote", "quasiquote", "unquote",
-        "let",
+        "let", "apply"
 };
 
 Type typeOfStr(const string &inputStr) {

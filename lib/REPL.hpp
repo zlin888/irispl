@@ -29,6 +29,8 @@ public:
     string bufferToString();
 
     bool inputBufferHasSideEffect();
+
+    string addDisplay(string code);
 };
 
 bool REPL::inputBufferIsFinished() {
@@ -73,6 +75,22 @@ string REPL::bufferToString() {
     return resultStr;
 }
 
+string REPL::addDisplay(string code) {
+    string verifyCode;
+    for (auto c : code) {
+        if (c != ' ') {
+            verifyCode.push_back(c);
+        }
+    }
+
+    if (!verifyCode.starts_with("(display")) {
+        return "(display " + code + ")";
+    } else {
+        return code;
+    }
+
+}
+
 
 void REPL::start() {
     cout << "Iris REPL v1.0.0" << endl;
@@ -86,7 +104,12 @@ void REPL::start() {
         if (repl.inputBufferIsFinished()) {
 
             try {
-                Module module = Module::loadModuleFromCode(repl.allCode + repl.bufferToString());
+                string inputCode = repl.bufferToString();
+                if(!repl.inputBufferHasSideEffect()) {
+                    inputCode = repl.addDisplay(inputCode);
+
+                }
+                Module module = Module::loadModuleFromCode(repl.allCode + inputCode);
 
                 Runtime runtime(OutputMode::BUFFERED);
                 Process process0 = runtime.createProcess(module);
@@ -101,7 +124,7 @@ void REPL::start() {
                 if (repl.inputBufferHasSideEffect()) {
                     repl.allCode += repl.bufferToString();
                 }
-            } catch (exception &e){
+            } catch (exception &e) {
                 cout << e.what() << endl;
             }
 

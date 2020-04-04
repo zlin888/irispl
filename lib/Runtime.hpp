@@ -142,7 +142,7 @@ public:
 
     void ailGoto();
 
-    vector<HandleOrStr> popOperandsInversely(int num);
+    vector<HandleOrStr> popOperands(int num);
 
     string toStr(HandleOrStr hos);
 
@@ -980,7 +980,7 @@ void Runtime::ailCons() {
     shared_ptr<ListObject> listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(handle));
     string argumentNum = this->currentProcessPtr->popOperand();
 
-    vector<HandleOrStr> hoses = this->popOperandsInversely(stoi(argumentNum));
+    vector<HandleOrStr> hoses = this->popOperands(stoi(argumentNum));
     for (auto hos : hoses) {
         listObjPtr->addChild(hos);
     }
@@ -1051,10 +1051,10 @@ void Runtime::ailGoto() {
     }
 }
 
-vector<HandleOrStr> Runtime::popOperandsInversely(int num) {
+vector<HandleOrStr> Runtime::popOperands(int num) {
     vector<HandleOrStr> buffer;
     for (int j = 0; j < num; ++j) {
-        buffer.insert(buffer.begin(), this->currentProcessPtr->popOperand());
+        buffer.insert(buffer.end(), this->currentProcessPtr->popOperand());
     }
     return buffer;
 }

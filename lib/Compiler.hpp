@@ -246,11 +246,11 @@ void Compiler::compileComplexApplication(Handle handle) {
 
     }
 
-    for (int i = childrenHoses.size() - 1; i >= 0; --i) {
+    for (int i = 0; i < childrenHoses.size(); ++i) {
         this->addInstruction("store " + tmpLambdaParams[i]);
     }
 
-    for (int i = 1; i < childrenHoses.size(); ++i) {
+    for (int i = childrenHoses.size() - 1; i >= 1 ; --i) {
         this->addInstruction("load " + tmpLambdaParams[i]);
     }
 
@@ -263,8 +263,8 @@ void Compiler::compileComplexApplication(Handle handle) {
     this->addInstruction(entryLabel);
 
     // Compile : (tmp_lambda A 1 2 ..)
-    for (auto childrenHos : childrenHoses) {
-        this->compileHos(childrenHos);
+    for (int j = childrenHoses.size() - 1; j >= 0; --j) {
+        this->compileHos(childrenHoses[j]);
     }
 
     // call the tmp lambda
