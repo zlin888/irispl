@@ -6,7 +6,6 @@ Yet another lisp-language. Typed-scheme in C++ VM
 ## Let
 lexical binding: variable will be defined can have init as default value. the scope of these varibles is inside the let 
 application
-general form:
 ```
 (let ((variable init)
       (variable init)
@@ -21,7 +20,6 @@ general form:
 ```
 
 ## Apply
-general form:
 ```
 (apply function argument-list)
 ```
