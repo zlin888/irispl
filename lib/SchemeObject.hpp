@@ -34,6 +34,16 @@ map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
         {SchemeObjectType::SchemeChildrenHosesObject, "SchemeChildrenHosesObject"},
 };
 
+string schemeObjectTypeToStr(SchemeObjectType schemeObjectType) {
+    if(SchemeObjectTypeStrMap.count(schemeObjectType)) {
+        return SchemeObjectTypeStrMap[schemeObjectType];
+    } else {
+        return "";
+    }
+}
+
+
+
 class SchemeObject {
 public:
     SchemeObject(SchemeObjectType schemeObjectType, Handle parentHandle, Handle selfHandle) : schemeObjectType(schemeObjectType),

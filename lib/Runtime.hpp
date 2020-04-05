@@ -128,8 +128,6 @@ public:
 
     void output(string outputStr, bool is_with_endl);
 
-    void output(string outputStr);
-
     void ailCar();
 
     void ailCdr();
@@ -805,7 +803,7 @@ void Runtime::ailIsPair() {
             this->currentProcessPtr->pushOperand("#f");
         } else {
             auto listObjPtr = static_pointer_cast<ListObject>(schemeObjPtr);
-            if(listObjPtr->size() == 0) {
+            if(listObjPtr->size() <= 1) {
                 this->currentProcessPtr->pushOperand("#f");
             } else {
                 this->currentProcessPtr->pushOperand("#t");
@@ -842,8 +840,7 @@ string Runtime::toStr(HandleOrStr hos) {
         if (schemeObjectPtr->schemeObjectType == SchemeObjectType::STRING) {
             auto stringObjPtr = static_pointer_cast<StringObject>(schemeObjectPtr);
             return stringObjPtr->content;
-        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::QUOTE ||
-                   schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
+        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::QUOTE) {
             string buffer = "(";
             auto hoses = SchemeObject::getChildrenHosesOrBodies(schemeObjectPtr);
             for (int i = 0; i < hoses.size(); ++i) {
@@ -860,6 +857,24 @@ string Runtime::toStr(HandleOrStr hos) {
             return buffer;
         } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
             return "<lambda:" + hos + ">";
+        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
+            auto listObjPtr = static_pointer_cast<ListObject>(schemeObjectPtr);
+            int currentIndex = listObjPtr->currentIndex;
+            string buffer = "(";
+            auto hoses = SchemeObject::getChildrenHosesOrBodies(listObjPtr->realListObjPtr);
+            for (int i = currentIndex; i < hoses.size(); ++i) {
+                buffer += this->toStr(hoses[i]);
+                if (i != hoses.size() - 1) {
+                    buffer += " ";
+                } else {
+                    buffer += ")";
+                    return buffer;
+                }
+            }
+            buffer += ")"; //always finished brackets
+            return buffer;
+        } else {
+            return hos + " " + schemeObjectTypeToStr(schemeObjectPtr->schemeObjectType);
         }
     } else if (hosType == Type::NUMBER || hosType == Type::BOOLEAN || hosType == Type::KEYWORD) {
         return hos;
