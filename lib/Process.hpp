@@ -47,6 +47,7 @@ public:
     Process(PID newPid, const Module &module);
 
     Instruction currentInstruction();
+    Instruction nextInstruction();
 
     inline void step() { this->PC++; };
 
@@ -97,6 +98,10 @@ void Process::initLabelLineMap() {
 
 Instruction Process::currentInstruction() {
     return this->instructions[PC];
+}
+
+Instruction Process::nextInstruction(){
+    return this->instructions[PC + 1];
 }
 
 Process::Process(PID newPid, const Module &module) {

@@ -14,6 +14,7 @@
 using namespace std;
 
 string RUNTIME_PREFIX = "_!!!runtime_prefix!!!_";
+string PUSHEND = "_!!!pushend!!!_";
 
 enum class OutputMode {
     BUFFERED, UNBUFFERED
@@ -26,6 +27,11 @@ public:
     std::shared_ptr<Process> currentProcessPtr;
     vector<string> outputBuffer;
     OutputMode outputMode;
+    vector<string> pushendStack;
+    bool pushendMode = false;
+
+    string ERROR_PREFIX = "------------ Runtime Error ------------\n";
+    string ERROR_POSTFIX = "---------------------------------------";
 
     inline Runtime() { this->outputMode = OutputMode::UNBUFFERED; };
 
@@ -147,6 +153,16 @@ public:
     void ailBegin();
 
     void ailIsPair();
+
+    void ailPushend();
+
+    vector<HandleOrStr> popOperandsToPushend();
+
+    void checkWrongArgumentsNumberError(string functionName, int expectedNum, int actualNum);
+
+    void addPushendStack(string pushendStr);
+
+    bool matchPushendStack(string pushendStr);
 };
 
 
@@ -218,6 +234,7 @@ void Runtime::execute() {
         else if (mnemonic == "load") { this->ailLoad(); }
         else if (mnemonic == "loadclosure") { this->aliLoadClosure(); }
         else if (mnemonic == "push") { this->ailPush(); }
+        else if (mnemonic == "pushend") { this->ailPushend(); }
         else if (mnemonic == "pop") { this->ailPop(); }
         else if (mnemonic == "set") { this->ailSet(); }
 
@@ -291,9 +308,45 @@ void Runtime::ailStore() {
         throw std::invalid_argument("[ERROR] store argument is not a variable : aliStore");
 
     string variableName = instruction.argument;
-    string variableValue = this->currentProcessPtr->popOperand();
 
-    this->currentProcessPtr->currentClosurePtr->setBoundVariable(variableName, variableValue, false);
+    // handle the argument '.'
+    // store arbitrary-args.scm.LAMBDA_12..
+    // store arbitrary-args.scm.LAMBDA_12.args
+    // we need to set the global variable PUSHEND_MODE
+    // treat args as list, and store everything from stack to it until we reach PUSHEND
+    if (variableName.ends_with('.')) {
+        // make sure the next instruction looks like 'store agrs'
+        // it this handle in compiler, no need to handle again
+        Instruction nextInstruction = this->currentProcessPtr->nextInstruction();
+        if (nextInstruction.mnemonic != "store") {
+            utils::log("When using arbitrary arguments function, an variable to stored a list must be put after '.'.",
+                       __FILE__, __FUNCTION__, __LINE__);
+            throw std::runtime_error("");
+        }
+        this->pushendMode = true;
+        this->currentProcessPtr->step();
+
+        // do not store anything on '.'
+        return;
+    }
+
+    if (this->pushendMode) {
+        Handle handle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
+        shared_ptr<ListObject> listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(handle));
+
+        vector<HandleOrStr> hoses = this->popOperandsToPushend();
+        for (auto hos : hoses) {
+            listObjPtr->addChild(hos);
+        }
+
+        this->pushendMode = false;
+        this->currentProcessPtr->currentClosurePtr->setBoundVariable(variableName, handle, false);
+    } else {
+        auto hoses = this->popOperands(1);
+        string variableValue = hoses[0];
+        this->currentProcessPtr->currentClosurePtr->setBoundVariable(variableName, variableValue, false);
+    }
+
     this->currentProcessPtr->step();
 }
 
@@ -311,8 +364,8 @@ Handle Runtime::newClosureBaseOnCurrentClosure(int instAddress) {
     auto boundVariables = this->currentProcessPtr->currentClosurePtr->boundVariables;
     for (auto &boundVariable : boundVariables) {
         this->currentProcessPtr->getClosurePtr(newClosureHandle)->setFreeVariable(boundVariable.first,
-                                                                                   boundVariable.second,
-                                                                                   false);
+                                                                                  boundVariable.second,
+                                                                                  false);
     }
     return newClosureHandle;
 }
@@ -378,8 +431,14 @@ void Runtime::ailPush() {
     this->currentProcessPtr->step();
 }
 
+void Runtime::ailPushend() {
+    Instruction instruction = this->currentProcessPtr->currentInstruction();
+    this->currentProcessPtr->pushOperand(PUSHEND + "." + instruction.argument);
+    this->currentProcessPtr->step();
+}
+
 void Runtime::ailPop() {
-    this->currentProcessPtr->popOperand();
+    this->popOperands(1);
     this->currentProcessPtr->step();
 }
 
@@ -393,9 +452,13 @@ void Runtime::ailSet() {
 
 
     string variable = instruction.argument;
-    string newValue = this->currentProcessPtr->popOperand();
 
-    if (!this->currentProcessPtr->currentClosurePtr->hasBoundVariable(variable) && !this->currentProcessPtr->currentClosurePtr->hasFreeVariable(variable)) {
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("set", 1, hoses.size());
+    string newValue = hoses[0];
+
+    if (!this->currentProcessPtr->currentClosurePtr->hasBoundVariable(variable) &&
+        !this->currentProcessPtr->currentClosurePtr->hasFreeVariable(variable)) {
         utils::log("variable " + variable + " not found", __FILE__, __FUNCTION__, __LINE__);
         throw std::invalid_argument("");
     }
@@ -413,7 +476,7 @@ void Runtime::ailSet() {
     auto topClosurePtr = this->currentProcessPtr->getClosurePtr(TOP_NODE_HANDLE);
 
     while (currentClosurePtr != topClosurePtr) {
-        if(currentClosurePtr->hasBoundVariable(variable)) {
+        if (currentClosurePtr->hasBoundVariable(variable)) {
             currentClosurePtr->setBoundVariable(variable, newValue, true);
         }
 
@@ -505,8 +568,10 @@ void Runtime::ailHalt() {
 //=================================================================
 
 void Runtime::ailAdd() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("add", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -521,8 +586,10 @@ void Runtime::ailAdd() {
 }
 
 void Runtime::ailSub() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("sub", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -536,8 +603,10 @@ void Runtime::ailSub() {
 }
 
 void Runtime::ailDiv() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("div", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -551,8 +620,10 @@ void Runtime::ailDiv() {
 }
 
 void Runtime::ailMul() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("mul", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -566,8 +637,10 @@ void Runtime::ailMul() {
 }
 
 void Runtime::ailMod() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("mod", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -581,8 +654,10 @@ void Runtime::ailMod() {
 }
 
 void Runtime::ailPow() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("pow", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -596,8 +671,10 @@ void Runtime::ailPow() {
 }
 
 void Runtime::ailEqn() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("eqn", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -613,8 +690,10 @@ void Runtime::ailEqn() {
 
 // >=
 void Runtime::ailGe() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("ge", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -630,8 +709,10 @@ void Runtime::ailGe() {
 }
 
 void Runtime::ailLe() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("le", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -647,8 +728,10 @@ void Runtime::ailLe() {
 }
 
 void Runtime::ailGt() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("gt", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -664,8 +747,10 @@ void Runtime::ailGt() {
 }
 
 void Runtime::ailLt() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("lt", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
@@ -680,14 +765,19 @@ void Runtime::ailLt() {
 }
 
 void Runtime::ailNot() {
-    string operand = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("lt", 1, hoses.size());
+    string operand = hoses[0];
+
     this->currentProcessPtr->pushOperand(operand == "#f" ? "#t" : "#f");
     this->currentProcessPtr->step();
 }
 
 void Runtime::ailAnd() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("and", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (operand1 == "#f" || operand2 == "#f") {
         this->currentProcessPtr->pushOperand("#f");
@@ -699,8 +789,10 @@ void Runtime::ailAnd() {
 }
 
 void Runtime::ailOr() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("or", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     if (operand1 == "#t" || operand2 == "#t") {
         this->currentProcessPtr->pushOperand("#t");
@@ -712,8 +804,10 @@ void Runtime::ailOr() {
 }
 
 void Runtime::ailIsEq() {
-    string operand1 = this->currentProcessPtr->popOperand();
-    string operand2 = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("eq", 2, hoses.size());
+    string operand1 = hoses[0];
+    string operand2 = hoses[1];
 
     Type operand1Type = typeOfStr(operand1);
     Type operand2Type = typeOfStr(operand2);
@@ -781,7 +875,10 @@ void Runtime::ailIsatom() {
 }
 
 void Runtime::ailIsList() {
-    string argument = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("isList", 1, hoses.size());
+    string argument = hoses[0];
+
     if (typeOfStr(argument) == Type::HANDLE) {
         auto schemeObjPtr = this->currentProcessPtr->heap.get(argument);
         if (schemeObjPtr->schemeObjectType != SchemeObjectType::LIST) {
@@ -796,14 +893,17 @@ void Runtime::ailIsList() {
 }
 
 void Runtime::ailIsPair() {
-    string argument = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("isPair", 1, hoses.size());
+    string argument = hoses[0];
+
     if (typeOfStr(argument) == Type::HANDLE) {
         auto schemeObjPtr = this->currentProcessPtr->heap.get(argument);
         if (schemeObjPtr->schemeObjectType != SchemeObjectType::LIST) {
             this->currentProcessPtr->pushOperand("#f");
         } else {
             auto listObjPtr = static_pointer_cast<ListObject>(schemeObjPtr);
-            if(listObjPtr->size() <= 1) {
+            if (listObjPtr->size() <= 1) {
                 this->currentProcessPtr->pushOperand("#f");
             } else {
                 this->currentProcessPtr->pushOperand("#t");
@@ -817,7 +917,10 @@ void Runtime::ailIsPair() {
 }
 
 void Runtime::ailIsnumber() {
-    string operand = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("isNumber", 1, hoses.size());
+    string operand = hoses[0];
+
     this->currentProcessPtr->pushOperand(typeOfStr(operand) == Type::NUMBER ? "#t" : "#f");
     this->currentProcessPtr->step();
 
@@ -828,7 +931,10 @@ void Runtime::ailIsnumber() {
 //=================================================================
 
 void Runtime::ailDisplay() {
-    string argument = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("display", 1, hoses.size());
+    string argument = hoses[0];
+
     this->output(this->toStr(argument), true);
     this->currentProcessPtr->step();
 }
@@ -851,7 +957,7 @@ string Runtime::toStr(HandleOrStr hos) {
                     buffer += ")";
                 }
             }
-            if(hoses.size() == 0) {
+            if (hoses.size() == 0) {
                 buffer += ")";
             }
             return buffer;
@@ -933,7 +1039,10 @@ void Runtime::ailDuplicate() {
 }
 
 void Runtime::ailCar() {
-    HandleOrStr hos = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("car", 1, hoses.size());
+
+    HandleOrStr hos = hoses[0];
     Type hosType = typeOfStr(hos);
 
     if (hosType == Type::HANDLE) {
@@ -955,7 +1064,10 @@ void Runtime::ailCar() {
 }
 
 void Runtime::ailCdr() {
-    HandleOrStr hos = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("cdr", 1, hoses.size());
+
+    HandleOrStr hos = hoses[0];
     Type hosType = typeOfStr(hos);
 
     if (hosType == Type::HANDLE) {
@@ -993,9 +1105,10 @@ void Runtime::ailCons() {
 
     Handle handle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
     shared_ptr<ListObject> listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(handle));
-    string argumentNum = this->currentProcessPtr->popOperand();
+//    string argumentNum = this->currentProcessPtr->popOperand();
 
-    vector<HandleOrStr> hoses = this->popOperands(stoi(argumentNum));
+    auto hoses = this->popOperandsToPushend();
+    this->checkWrongArgumentsNumberError("cdr", 1, hoses.size());
     for (auto hos : hoses) {
         listObjPtr->addChild(hos);
     }
@@ -1004,7 +1117,10 @@ void Runtime::ailCons() {
 }
 
 void Runtime::ailIfTrue() {
-    string predicate = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("iftrue", 1, hoses.size());
+
+    string predicate = hoses[0];
     Type predicateType = typeOfStr(predicate);
 
     string argument = this->currentProcessPtr->currentInstruction().argument;
@@ -1029,7 +1145,10 @@ void Runtime::ailIfTrue() {
 }
 
 void Runtime::ailIfFalse() {
-    string predicate = this->currentProcessPtr->popOperand();
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("iffalse", 1, hoses.size());
+
+    string predicate = hoses[0];
     Type predicateType = typeOfStr(predicate);
 
     string argument = this->currentProcessPtr->currentInstruction().argument;
@@ -1069,16 +1188,62 @@ void Runtime::ailGoto() {
 vector<HandleOrStr> Runtime::popOperands(int num) {
     vector<HandleOrStr> buffer;
     for (int j = 0; j < num; ++j) {
-        buffer.insert(buffer.end(), this->currentProcessPtr->popOperand());
+        if (!this->currentProcessPtr->opStack.empty()) {
+            HandleOrStr hos = this->currentProcessPtr->popOperand();
+            if (hos.starts_with(PUSHEND)) {
+                this->matchPushendStack(hos);
+                j--;
+            } else {
+                buffer.insert(buffer.end(), hos);
+            }
+        } else {
+            break;
+        }
     }
     return buffer;
+}
+
+vector<HandleOrStr> Runtime::popOperandsToPushend() {
+    vector<HandleOrStr> buffer;
+
+    while (!this->currentProcessPtr->opStack.empty()) {
+        auto hos = this->currentProcessPtr->popOperand();
+        if (hos.starts_with(PUSHEND)) {
+            if (this->matchPushendStack(hos)) {
+                break;
+            }
+        } else {
+            buffer.insert(buffer.end(), hos);
+        }
+    }
+    return buffer;
+}
+
+bool Runtime::matchPushendStack(string pushendStr) {
+    if (this->pushendStack.empty() || this->pushendStack.back() != pushendStr) {
+        this->pushendStack.push_back(pushendStr);
+        return false;
+    } else {
+        this->pushendStack.pop_back();
+        return true;
+    }
 }
 
 void Runtime::ailBegin() {
     this->currentProcessPtr->step();
 }
 
-
-
+void Runtime::checkWrongArgumentsNumberError(string functionName, int expectedNum, int actualNum) {
+    if (expectedNum != actualNum) {
+        string be = actualNum > 1 ? " are " : " is ";
+        string add_s = expectedNum > 1 ? "s" : "";
+        cout << this->ERROR_PREFIX;
+        cout << "[" + functionName + "] expects " + to_string(expectedNum) + " argument" + add_s +
+                ", " +
+                to_string(actualNum) + be + "given" << endl;
+        cout << this->ERROR_POSTFIX << endl;
+        throw std::runtime_error("");
+    }
+}
 
 #endif // !RUNTIME_HPP

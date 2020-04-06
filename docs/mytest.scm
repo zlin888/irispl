@@ -1,3 +1,4 @@
+(import MoB "/Users/bytedance/CLionProjects/typed-scheme/docs/test.utils.scm")
 
 (define pass 'pass)
 (define error 'error)
@@ -10,36 +11,24 @@
                   ((eq? selector 'cell?) #t)
                   (else #f)))))
 
-(define make-named-cell
-    (lambda (value the-name)
-        (let ((s-cell (make-simple-cell value)))
-            (lambda (selector)
-                (cond ((eq? selector 'name) (lambda () the-name))
-                    (else (s-cell selector)))))))
+(define x (make-simple-cell 77))
 
-(define positive-filter (lambda (value) (>= value 0)))
+(display ((x 'fetch)))
+((x 'store!) 88)
+(display ((x 'fetch)))
 
-(define make-filtered-cell
-    (lambda (value filter)
-        (let ((super (make-simple-cell value)))
-            (lambda (selector)
-                (cond ((eq? selector 'store!)
-                        (lambda (self new-value) 
-                            (if (positive-filter new-value)
-                                ((super 'store!) new-value)
-                                error)))
-                        (else (super selector)))))))
-
-(define sub (lambda (x y) (- x y)))
-(display (sub 30 99))
+(define sum-list 
+  (lambda (args)
+    (if (pair? args)
+        (+ (car args) (sum-list (cdr args)))
+        (car args))))
 
 
-(define positive-cell (make-filtered-cell 55 positive-filter))
-(display ((positive-cell 'fetch)))
-((positive-cell 'store!) positive-cell 33)
-(display ((positive-cell 'fetch)))
-(display ((positive-cell 'store!) positive-cell -33))
+(define sum
+  (lambda (arg0 agr1 . args)
+    (+ (+ arg0 agr1) (sum-list args))))
 
-(display (cons (cons 1 13 88) 99))
+(+ 12 1)
 
-(apply )
+; (display (sum 1 2 (cons 3 4)))
+(display (sum 1 2 3 4))

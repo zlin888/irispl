@@ -56,6 +56,8 @@ public:
     bool isNativeCall(string nativeCall);
 
     void addLambdaHandle(Handle handle);
+
+    void coutContext(Handle handle);
 };
 
 shared_ptr<SchemeObject> AST::get(Handle handle) {
@@ -72,6 +74,14 @@ shared_ptr<SchemeObject> AST::get(Handle handle) {
 //        cout << this->source.substr(left, right) << endl;
 //        throw e;
     }
+}
+
+void AST::coutContext (Handle handle) {
+        int index = this->handleSourceIndexesMap[handle];
+        int left = index - 10 >= 0 ? index - 10 : 0;
+        int right = index + 10 < this->source.size() ? index + 10 : this->source.size() - 1;
+        cout << to_string(index) << endl;
+        cout << this->source.substr(left, right) << endl;
 }
 
 Handle AST::getTopApplicationHandle() {

@@ -19,6 +19,8 @@ class Compiler {
 public:
     AST ast;
     vector<Instruction> ILCode;
+    string ERROR_PREFIX = "------------ Compile Error ------------\n";
+    int ERROR_PREFIX_LEN = ERROR_PREFIX.size() - 1;
 
     map<string, string> primitiveInstructionMap{
             {"+",    "add"},
@@ -73,6 +75,14 @@ public:
     void compileFork(Handle handle);
 
     void compileCallCC(Handle handle);
+
+    string createErrorMessage(string message);
+
+    string createErrorMessage(string message, Handle handle);
+
+    void handleArbitraryFunction(int j, vector<HandleOrStr> &parameters);
+
+    void handleArbitraryFunction(int j, const Handle &lambdaHandle);
 };
 
 vector<Instruction> Compiler::compile(AST ast) {
@@ -109,10 +119,18 @@ void Compiler::compileLambda(Handle lambdaHandle) {
     // label, for jumping
     this->addInstruction("@" + lambdaHandle);
 
-    for (string parameter : lambdaObjPtr->parameters) {
-        this->addInstruction("store " + parameter);
-    }
+    // in-order
+    for (int j = 0; j < lambdaObjPtr->parameters.size(); ++j) {
+        this->addInstruction("store " + lambdaObjPtr->parameters[j]);
 
+        // handle the '.' parameter, arbitrary arguments function
+        // . should be follow by only one parameters
+        // looks like: (lambda (arg0 arg1 . args) ())
+        if (lambdaObjPtr->parameters[j].ends_with('.')) {
+            // error will be raise inside, if something goes wrong
+            this->handleArbitraryFunction(j, lambdaHandle);
+        }
+    }
 
     for (int i = 0; i < lambdaObjPtr->bodies.size(); i++) {
         this->compileHos(lambdaObjPtr->bodies[i]);
@@ -120,6 +138,29 @@ void Compiler::compileLambda(Handle lambdaHandle) {
 
     this->addInstruction("return");
 }
+
+void Compiler::handleArbitraryFunction(int j, const Handle &lambdaHandle) {
+    auto lambdaObjPtr = static_pointer_cast<LambdaObject>(this->ast.get(lambdaHandle));
+    if (j + 1 != lambdaObjPtr->parameters.size() - 1) {
+        if (j + 1 < lambdaObjPtr->parameters.size() - 1) {
+            this->createErrorMessage(
+                    "When using arbitrary arguments function, only one argument can be put after '.'.",
+                    lambdaHandle);
+            throw std::runtime_error("");
+        } else if (j + 1 > lambdaObjPtr->parameters.size() - 1) {
+            this->createErrorMessage(
+                    "When using arbitrary arguments function, one argument should be put after '.'.",
+                    lambdaHandle);
+            throw std::runtime_error("");
+        }
+    }
+}
+
+string Compiler::createErrorMessage(string message, Handle handle) {
+    string prefix = this->ERROR_PREFIX;
+    string formattedMessage = prefix + message;
+    utils::coutContext(this->ast, handle, formattedMessage, this->ERROR_PREFIX_LEN);
+};
 
 void Compiler::compileHos(HandleOrStr hos) {
     Type hosType = typeOfStr(hos);
@@ -176,10 +217,15 @@ void Compiler::compileApplication(Handle handle) {
         this->compileComplexApplication(handle);
         return;
     } else if (utils::makeSet<Type>(3, Type::HANDLE, Type::VARIABLE, Type::KEYWORD).count(firstType)) {
+
+        string uniqueStr = this->makeUniqueString();
+        this->addInstruction("pushend " + uniqueStr);
         // handle parameters
-        for (int i = childrenHoses.size() - 1 ; i >= 1; i--) {
+        for (int i = childrenHoses.size() - 1; i >= 1; i--) {
             this->compileHos(childrenHoses[i]);
         }
+        this->addInstruction("pushend " + uniqueStr);
+
 
         // 1. Make sure the first child is valid: native, variable, primitive, lambda
         // 2. handle tailcall
@@ -191,11 +237,12 @@ void Compiler::compileApplication(Handle handle) {
                 this->addInstruction(this->primitiveInstructionMap[first]);
             } else {
                 if (first == "cons") {
-                    if(childrenHoses.size() == 1) {
+                    if (childrenHoses.size() == 1) {
                         throw std::runtime_error(
                                 "[compileApplication] cons' arguments should more than 0.");
                     }
-                    this->addInstruction("push " + to_string(childrenHoses.size() - 1)); // the number of cons application arguments
+//                    this->addInstruction(
+//                            "push " + to_string(childrenHoses.size() - 1)); // the number of cons application arguments
                 }
                 this->addInstruction(first);
             }
@@ -212,6 +259,7 @@ void Compiler::compileApplication(Handle handle) {
             }
         } else {
             if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
+                auto lambdaObjPtr = static_pointer_cast<LambdaObject>(this->ast.get(first));
                 this->addInstruction("call @" + first);
             } else if (firstType == Type::VARIABLE) {
                 // include native
@@ -243,14 +291,13 @@ void Compiler::compileComplexApplication(Handle handle) {
     vector<string> tmpLambdaParams;
     for (int i = 0; i < childrenHoses.size(); ++i) {
         tmpLambdaParams.push_back("TEMP_LAMBDA_PARAM" + to_string(i) + "_" + uniqueStr);
-
     }
 
     for (int i = 0; i < childrenHoses.size(); ++i) {
         this->addInstruction("store " + tmpLambdaParams[i]);
     }
 
-    for (int i = childrenHoses.size() - 1; i >= 1 ; --i) {
+    for (int i = childrenHoses.size() - 1; i >= 1; --i) {
         this->addInstruction("load " + tmpLambdaParams[i]);
     }
 
@@ -261,7 +308,6 @@ void Compiler::compileComplexApplication(Handle handle) {
     // ------------------------------------------------------- TMP LAMBDA ----------------------------
 
     this->addInstruction(entryLabel);
-
     // Compile : (tmp_lambda A 1 2 ..)
     for (int j = childrenHoses.size() - 1; j >= 0; --j) {
         this->compileHos(childrenHoses[j]);

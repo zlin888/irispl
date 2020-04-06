@@ -95,6 +95,8 @@ Handle Heap::makeApplication(const string &prefix, Handle parentHandle) {
 Handle Heap::makeList(const string &prefix, Handle parentHandle) {
     string handle = this->allocateHandle(prefix, SchemeObjectType::LIST);
     this->set(handle, std::shared_ptr<ListObject>(new ListObject(parentHandle, handle)));
+    shared_ptr<ListObject> listObjPtr = static_pointer_cast<ListObject>(this->get(handle));
+    listObjPtr->realListObjPtr = listObjPtr;
     return handle;
 }
 
