@@ -66,10 +66,9 @@ private:
 
     void makeImportedNameUnique();
 
-    void makeImportedNameUniqueHelper();
+    void importModuleFromCode(string &code);
 
-    void importModuleFromCode(const string &code);
-
+    void importModule(string &path);
 };
 
 
@@ -121,13 +120,14 @@ Module Module::loadModule(string path) {
 
 }
 
-void Module::importModuleFromCode(const string &code) {
+void Module::importModuleFromCode(string &code) {
     // for repl
     string moduleName = this->getModuleNameFromPath("repl");
+    string path = "repl";
 
-    AST currentAST;
+    AST currentAST(moduleName, code, path);
 
-    currentAST = Parser::parse(Lexer::tokenize(code), moduleName, code);
+    currentAST = Parser::parse(Lexer::tokenize(code), moduleName, code, currentAST);
     currentAST = Analyser::analyse(currentAST);
 
     this->allASTs[moduleName] = currentAST;
@@ -140,13 +140,13 @@ void Module::importModuleFromCode(const string &code) {
     // topologic sort the imported module in dependencies, can put the result to this->sortedModuleName
 }
 
-void Module::importModule(const string &path) {
+void Module::importModule(string &path) {
     string code = this->getFormattedCode(path);
     string moduleName = this->getModuleNameFromPath(path);
 
-    AST currentAST;
+    AST currentAST(code, moduleName, path);
 
-    currentAST = Parser::parse(Lexer::tokenize(code), moduleName, code);
+    currentAST = Parser::parse(Lexer::tokenize(code), moduleName, code, currentAST);
     currentAST = Analyser::analyse(currentAST);
 
     this->allASTs[moduleName] = currentAST;
@@ -287,7 +287,7 @@ string Module::getFormattedCode(string path) {
         throw "[ERROR] module " + path + "not found";
     }
 
-    code = "((lambda () " + code + "))\n";
+    code = "((lambda () " + code + "))";
 
     return code;
 

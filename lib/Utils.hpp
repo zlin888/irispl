@@ -69,63 +69,41 @@ namespace utils {
     }
 
     void coutContext(AST &ast, const Handle &handle, string message) {
-        int index = ast.handleSourceIndexesMap[handle];
+        string moduleName = ast.sourceCodeMapper.getModuleName(handle);
+        string path = ast.sourceCodeMapper.getPath(handle);
+        int index = ast.sourceCodeMapper.getIndex(handle);
+        string source = ast.sourceCodeMapper.getSourceCode(handle);
 
-        int left = index;
-        int right = index;
-        int contextLineNum = 2;
-        for (int i = 0; i < contextLineNum; i++) {
-            // roll back one sentence * 2
-            while (left > 0 && ast.source[left] != '\n') {
-                left--; //left will be either 0 or '\n'
-            }
-            if (left > 0) {
-                left--;
-            }
-        }
+        cout << "Description: " + message << endl;
+        cout << "Happened in: " + moduleName + " " + path << endl;
 
-        for (int i = 0; i < contextLineNum; i++) {
-            // roll back one sentence * 2
-            while (right < ast.source.size() - 1 && ast.source[right] != '\n') {
-                right++;
-            }
-            if (right < ast.source.size() - 1) {
-                right++;
-            }
-        }
-
-        // find out the current line
         int line = 1;
-        for (int i = 0; i < ast.source.size(); i++) {
+        for (int i = 0; i < source.size(); i++) {
             if (i == index) {
                 break;
             }
-            if (ast.source[i] == '\n') {
+            if (source[i] == '\n') {
                 line++;
             }
         }
 
-        int outputedLineNum = 2;
-        bool inTheLine = false;
+        vector<string> fields;
+        boost::split(fields, source, boost::is_any_of("\n"));
 
-        cout << message << endl;
+        int left = line - 1 - 2;
+        int right = line - 1 + 2;
         for (int i = left; i <= right; i++) {
-            if(ast.source[i-1] == '\n') {
-                cout << to_string(line - outputedLineNum) + ": ";
-                outputedLineNum--;
-            }
-            if (i == index) {
-                inTheLine = true;
-            }
-            if (ast.source[i] == '\n') {
-                if (inTheLine) {
-                    inTheLine = false;
-                    cout << "          <-- Ooops";
+            // fields[-1] is always '))', used to complete the top_lambda, we don't want to show it to user
+            if (i >= 0 && i < fields.size() - 1) {
+                cout << "  " + to_string(i + 1) + ": ";
+                cout << fields[i];
+                if (i == line - 1) {
+                    cout << "                 <--- Oooops~" << endl;
+                } else {
+                    cout << endl;
                 }
             }
-            cout << ast.source[i];
         }
-        cout << endl;
     }
 
 }

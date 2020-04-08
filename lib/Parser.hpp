@@ -20,7 +20,9 @@ class AST {
 public:
     AST() {};
 
-    AST(const string &source, string &moduleName) : source(source), moduleName(moduleName) {};
+    AST(const string &source, string &moduleName, string &path) : source(source), moduleName(moduleName) {
+        this->sourceCodeMapper.addModule(moduleName, source, path);
+    };
 
 //    //Copy constructor, remember to change it when changing the fields list
 //    AST(const AST &ast);
@@ -38,7 +40,7 @@ public:
     map<string, string> definedVarOriginUniqueNameMap;
     vector<Handle> lambdaHandles;
     vector<Handle> tailcalls;
-
+    SourceCodeMapper sourceCodeMapper;
 
     Handle getTopApplicationHandle();
 
@@ -59,7 +61,16 @@ public:
     void addLambdaHandle(Handle handle);
 
     void coutContext(Handle handle);
+
+    void setHandleSourceIndexMapping(Handle handle, int index);
+
 };
+
+void AST::setHandleSourceIndexMapping(Handle handle, int index) {
+    this->sourceCodeMapper.setHandleSourceIndexMapping(handle, index, this->moduleName);
+    this->handleSourceIndexesMap[handle] = index;
+}
+
 
 shared_ptr<SchemeObject> AST::get(Handle handle) {
     try {
@@ -75,14 +86,6 @@ shared_ptr<SchemeObject> AST::get(Handle handle) {
 //        cout << this->source.substr(left, right) << endl;
 //        throw e;
     }
-}
-
-void AST::coutContext (Handle handle) {
-        int index = this->handleSourceIndexesMap[handle];
-        int left = index - 10 >= 0 ? index - 10 : 0;
-        int right = index + 10 < this->source.size() ? index + 10 : this->source.size() - 1;
-        cout << to_string(index) << endl;
-        cout << this->source.substr(left, right) << endl;
 }
 
 Handle AST::getTopApplicationHandle() {
@@ -123,7 +126,8 @@ vector<HandleOrStr> AST::getTopLambdaBodies() {
 // build them when merging
 void AST::mergeAST(AST anotherAST) {
 
-    this->source = anotherAST.source + "\n" + this->source;
+//    this->source = anotherAST.source + "\n" + this->source;
+    this->sourceCodeMapper.merge(anotherAST.sourceCodeMapper);
 
     // merge heap
     for (auto &[handle, schemeObjPtr] : anotherAST.heap.dataMap) {
@@ -242,12 +246,13 @@ public:
 
     int parseTerm(int index);
 
-    Parser(const vector<Lexer::Token> &tokens, const string &moduleName) : tokens(tokens) {
+    Parser(const vector<Lexer::Token> &tokens, const string &moduleName, AST &ast) : tokens(tokens) {
         this->nodeStack.push_back(TOP_NODE_HANDLE);
         this->ast.moduleName = moduleName;
+        this->ast = ast;
     }
 
-    static AST parse(const vector<Lexer::Token> &tokens, const string &moduleName, const string &code);
+    static AST parse(const vector<Lexer::Token> &tokens, const string &moduleName, const string &code, AST &ast);
 
     void parseLog(const string &msg);
 
@@ -292,8 +297,8 @@ public:
 };
 
 
-AST Parser::parse(const vector<Lexer::Token> &tokens, const string &moduleName, const string &code) {
-    Parser parser(tokens, moduleName);
+AST Parser::parse(const vector<Lexer::Token> &tokens, const string &moduleName, const string &code, AST &ast) {
+    Parser parser(tokens, moduleName, ast);
     parser.parseTerm(0);
     parser.preProcessAnalysis();
     parser.ast.source = code;
@@ -334,7 +339,7 @@ int Parser::parseLambda(int index) {
     Handle lambdaHandle = this->ast.heap.makeLambda(this->ast.moduleName, this->nodeStack.back());
     this->nodeStack.push_back(lambdaHandle);
 
-    ast.handleSourceIndexesMap[lambdaHandle] = this->tokens[index].sourceIndex;
+    this->ast.setHandleSourceIndexMapping(lambdaHandle, tokens[index].sourceIndex);
     ast.lambdaHandles.push_back(lambdaHandle);
 
     int nextIndex = this->parseArgList(index + 2);
@@ -443,7 +448,7 @@ int Parser::parseQuoteTerm(int index) {
 
     this->nodeStack.push_back(sListHandle);
 
-    ast.handleSourceIndexesMap[sListHandle] = this->tokens[index].sourceIndex;
+    this->ast.setHandleSourceIndexMapping(sListHandle, tokens[index].sourceIndex);
     int nextIndex = this->parseTerm(index);
 
     HandleOrStr childHos = nodeStack.back();
@@ -509,7 +514,7 @@ int Parser::parseSList(int index) {
 
     this->nodeStack.push_back(sListHandle);
 
-    ast.handleSourceIndexesMap[sListHandle] = this->tokens[index].sourceIndex;
+    this->ast.setHandleSourceIndexMapping(sListHandle, tokens[index].sourceIndex);
     int nextIndex = this->parseSListSeq(index + 1);
 
     if(quoteType == "QUOTE") {
@@ -571,7 +576,7 @@ int Parser::parseSymbol(int index) {
             } else if (type == Type::STRING) {
                 Handle stringHandle = this->ast.heap.makeString(this->ast.moduleName, currentTokenStr);
                 this->nodeStack.push_back(stringHandle);
-                this->ast.handleSourceIndexesMap[stringHandle] = tokens[index].sourceIndex;
+                this->ast.setHandleSourceIndexMapping(stringHandle, tokens[index].sourceIndex);
             } else if (type == Type::SYMBOL) {
                 this->nodeStack.push_back(currentTokenStr);
             } else if ((type == Type::VARIABLE || type == Type::KEYWORD || type == Type::PORT) &&
@@ -593,7 +598,7 @@ int Parser::parseSymbol(int index) {
             } else if (type == Type::STRING) {
                 Handle stringHandle = this->ast.heap.makeString(this->ast.moduleName, currentTokenStr);
                 this->nodeStack.push_back(stringHandle);
-                this->ast.handleSourceIndexesMap[stringHandle] = tokens[index].sourceIndex;
+                this->ast.setHandleSourceIndexMapping(stringHandle, tokens[index].sourceIndex);
             } else if (type == Type::VARIABLE || type == Type::KEYWORD || type == Type::BOOLEAN || type == Type::PORT) {
                 // VARIABLE原样保留，在作用域分析的时候才被录入AST
                 this->nodeStack.push_back(currentTokenStr);
@@ -606,7 +611,7 @@ int Parser::parseSymbol(int index) {
             } else if (type == Type::STRING) {
                 Handle stringHandle = this->ast.heap.makeString(this->ast.moduleName, currentTokenStr);
                 this->nodeStack.push_back(stringHandle);
-                this->ast.handleSourceIndexesMap[stringHandle] = tokens[index].sourceIndex;
+                this->ast.setHandleSourceIndexMapping(stringHandle, tokens[index].sourceIndex);
             } else if (type == Type::SYMBOL) {
                 this->nodeStack.push_back(currentTokenStr);
             } else if (type == Type::VARIABLE || type == Type::KEYWORD || type == Type::BOOLEAN || type == Type::PORT) {

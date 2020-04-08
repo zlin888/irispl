@@ -1,4 +1,4 @@
-(import MoB "/Users/bytedance/CLionProjects/typed-scheme/docs/test.utils.scm")
+(import MoB "/Users/bytedance/CLionProjects/typed-scheme/docs/test.MoB.scm")
 
 (define pass 'pass)
 (define error 'error)
@@ -32,3 +32,4 @@
 
 ; (display (sum 1 2 (cons 3 4)))
 (display (sum 1 2 3 4))
+(apply 1)

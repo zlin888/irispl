@@ -37,7 +37,7 @@ namespace Transfer {
 
                     if (applicationObjPtr->childrenHoses.size() != 3) {
                         throw std::runtime_error(
-                                "[transfer] let syntex distakes " + to_string(ast.handleSourceIndexesMap[handle]));
+                                "[transfer] let syntex distakes " + to_string(ast.sourceCodeMapper.getIndex(handle)));
                     }
 
                     // (let bindingApplication expression(hos))
@@ -76,13 +76,13 @@ namespace Transfer {
                             if (bindingAppObjPtr->childrenHoses.size() != 2) {
                                 throw std::runtime_error(
                                         "[transfer] lexical binding should be pairs of variable and init " +
-                                        to_string(ast.handleSourceIndexesMap[handle]));
+                                        to_string(ast.sourceCodeMapper.getIndex(handle)));
                             }
                             if (typeOfStr(bindingAppObjPtr->childrenHoses[0]) != Type::VARIABLE) {
                                 throw std::runtime_error(
                                         "[transfer] lexical binding's first argument should be a variable, but get a " +
                                         bindingsAppPtr->childrenHoses[0] + " " +
-                                        to_string(ast.handleSourceIndexesMap[handle]));
+                                        to_string(ast.sourceCodeMapper.getIndex(handle)));
                             }
 
                             // add as parameter

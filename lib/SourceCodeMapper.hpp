@@ -20,16 +20,24 @@ public:
     map<Handle, string> handleModuleNameMap;
     map<string, map<Handle, int> > moduleNameHandleSourceIndexMapMap;
     map<string, string> moduleNameSourceMap;
+    map<string, string> moduleNamePathMap;
     set<string> moduleNames;
 
-    void addModule(string moduleName, string source);
+    void addModule(string moduleName, string source, string path);
 
-    void setHandleSourceIndexPair(Handle handle, int index, string moduleName);
+    void setHandleSourceIndexMapping(Handle handle, int index, string moduleName);
 
-    pair<int, string> getHandleIndexAndSourceCode(Handle handle);
+    int getIndex(Handle handle);
+    string getSourceCode(Handle handle);
+
+    void merge(SourceCodeMapper anotherSourceCodeMapper);
+
+    string getModuleName(Handle handle);
+
+    string getPath(Handle handle);
 };
 
-void SourceCodeMapper::addModule(string moduleName, string source) {
+void SourceCodeMapper::addModule(string moduleName, string source, string path) {
     if (!this->moduleNames.count(moduleName)) {
         this->moduleNames.insert(moduleName);
 
@@ -37,10 +45,11 @@ void SourceCodeMapper::addModule(string moduleName, string source) {
         this->moduleNameHandleSourceIndexMapMap[moduleName] = handleSourceIndexesMap;
 
         this->moduleNameSourceMap[moduleName] = source;
+        this->moduleNamePathMap[moduleName] = path;
     }
 }
 
-void SourceCodeMapper::setHandleSourceIndexPair(Handle handle, int index, string moduleName) {
+void SourceCodeMapper::setHandleSourceIndexMapping(Handle handle, int index, string moduleName) {
     if(this->moduleNames.count(moduleName)) {
         this->moduleNameHandleSourceIndexMapMap[moduleName][handle] = index;
         this->handleModuleNameMap[handle] = moduleName;
@@ -49,11 +58,55 @@ void SourceCodeMapper::setHandleSourceIndexPair(Handle handle, int index, string
     }
 }
 
-pair<int, string> SourceCodeMapper::getHandleIndexAndSourceCode(Handle handle) {
+int SourceCodeMapper::getIndex(Handle handle) {
     string moduleName = this->handleModuleNameMap[handle];
     int index = this->moduleNameHandleSourceIndexMapMap[moduleName][handle];
+    return index;
+}
+
+string SourceCodeMapper::getSourceCode(Handle handle) {
+    string moduleName = this->handleModuleNameMap[handle];
     string sourceCode = this->moduleNameSourceMap[moduleName];
-    return pair<int, string>(index, moduleName);
+    return sourceCode;
+}
+
+string SourceCodeMapper::getModuleName(Handle handle) {
+    string moduleName = this->handleModuleNameMap[handle];
+    return moduleName;
+}
+
+string SourceCodeMapper::getPath(Handle handle) {
+    string moduleName = this->handleModuleNameMap[handle];
+    string path = this->moduleNamePathMap[moduleName];
+    return path;
+}
+
+void SourceCodeMapper::merge(SourceCodeMapper anotherSourceCodeMapper) {
+
+    // merge moduleName sets
+    for (auto moduleName : anotherSourceCodeMapper.moduleNames) {
+        this->moduleNames.insert(moduleName);
+    }
+
+    // merge handleModuleNameMap
+    for (auto [handle, moduleName] : anotherSourceCodeMapper.handleModuleNameMap) {
+        this->handleModuleNameMap[handle] = moduleName;
+    }
+
+    // merge moduleNameHandleSourceIndexMapMap
+    for (auto [moduleName, handleSourceIndexMap] : anotherSourceCodeMapper.moduleNameHandleSourceIndexMapMap) {
+        this->moduleNameHandleSourceIndexMapMap[moduleName] = handleSourceIndexMap;
+    }
+
+    // merge moduleNameSourceMap
+    for (auto [moduleName, source] : anotherSourceCodeMapper.moduleNameSourceMap) {
+        this->moduleNameSourceMap[moduleName] = source;
+    }
+
+    // merge modulePathMap
+    for (auto [moduleName, path] : anotherSourceCodeMapper.moduleNameSourceMap) {
+        this->moduleNamePathMap[moduleName] = path;
+    }
 }
 
 
