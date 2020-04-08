@@ -163,6 +163,10 @@ public:
     void addPushendStack(string pushendStr);
 
     bool matchPushendStack(string pushendStr);
+
+    void ailPushlist();
+
+    void ailPushlist(Handle listHandle);
 };
 
 
@@ -235,6 +239,7 @@ void Runtime::execute() {
         else if (mnemonic == "loadclosure") { this->aliLoadClosure(); }
         else if (mnemonic == "push") { this->ailPush(); }
         else if (mnemonic == "pushend") { this->ailPushend(); }
+        else if (mnemonic == "pushlist") { this->ailPushlist(); }
         else if (mnemonic == "pop") { this->ailPop(); }
         else if (mnemonic == "set") { this->ailSet(); }
 
@@ -434,6 +439,21 @@ void Runtime::ailPush() {
 void Runtime::ailPushend() {
     Instruction instruction = this->currentProcessPtr->currentInstruction();
     this->currentProcessPtr->pushOperand(PUSHEND + "." + instruction.argument);
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailPushlist() {
+
+    auto hoses = this->popOperands(1);
+    // TODO: raise a type error here
+    auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hoses[0]));
+
+    int i = listObjPtr->currentIndex;
+    while (i != listObjPtr->realListObjPtr->size()) {
+        this->currentProcessPtr->pushOperand(listObjPtr->realListObjPtr->childrenHoses[i]);
+        i++;
+    }
+
     this->currentProcessPtr->step();
 }
 
@@ -961,8 +981,8 @@ string Runtime::toStr(HandleOrStr hos) {
                 buffer += ")";
             }
             return buffer;
-        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
-            return "<lambda:" + hos + ">";
+        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::CLOSURE) {
+            return "<lambda: " + hos + " >";
         } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
             auto listObjPtr = static_pointer_cast<ListObject>(schemeObjectPtr);
             int currentIndex = listObjPtr->currentIndex;
@@ -1108,7 +1128,6 @@ void Runtime::ailCons() {
 //    string argumentNum = this->currentProcessPtr->popOperand();
 
     auto hoses = this->popOperandsToPushend();
-    this->checkWrongArgumentsNumberError("cdr", 1, hoses.size());
     for (auto hos : hoses) {
         listObjPtr->addChild(hos);
     }

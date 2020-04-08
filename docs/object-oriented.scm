@@ -41,5 +41,16 @@
 (display ((positive-cell 'store!) positive-cell -33))
 
 (display (cons (cons 1 13 88) 99))
+(display make-filtered-cell)
+(display sub)
 
-(apply )
+(define =>
+  (lambda (instance method . args)
+    (let ((_method (instance method)))
+      (apply _method args))))
+
+(define simple-cell (make-simple-cell 33))
+
+(display (=> simple-cell 'fetch))
+(=> simple-cell 'store! 77)
+(display (=> simple-cell 'fetch))

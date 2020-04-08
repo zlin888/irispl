@@ -68,7 +68,7 @@ namespace utils {
         }
     }
 
-    void coutContext(AST &ast, const Handle &handle, string message, int prefixSize) {
+    void coutContext(AST &ast, const Handle &handle, string message) {
         int index = ast.handleSourceIndexesMap[handle];
 
         int left = index;
@@ -126,11 +126,8 @@ namespace utils {
             cout << ast.source[i];
         }
         cout << endl;
-        for (int i = 0; i < prefixSize; i++) {
-            cout << "-";
-        }
-        cout << endl;
     }
+
 }
 
 #endif //TYPED_SCHEME_UTILS_HPP

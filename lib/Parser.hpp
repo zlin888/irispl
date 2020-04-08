@@ -12,6 +12,7 @@
 #include "Heap.hpp"
 #include <stdexcept>
 #include <boost/algorithm/string.hpp>
+#include "SourceCodeMapper.hpp"
 
 using namespace std;
 
@@ -114,6 +115,12 @@ vector<HandleOrStr> AST::getTopLambdaBodies() {
     return static_pointer_cast<LambdaObject>(this->heap.get(this->getTopLambdaHandle()))->bodies;
 }
 
+
+// merge source and handlesourcemap, we can use moduleName as key
+// -> mapping
+// handle -> moduleName : handleModuleNameMap
+// moduleName -> source and handleSourceMap : moduleNameSourceMap, moduleNameHandleSourceMapMap
+// build them when merging
 void AST::mergeAST(AST anotherAST) {
 
     this->source = anotherAST.source + "\n" + this->source;

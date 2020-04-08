@@ -19,7 +19,8 @@ class Compiler {
 public:
     AST ast;
     vector<Instruction> ILCode;
-    string ERROR_PREFIX = "------------ Compile Error ------------\n";
+    string ERROR_PREFIX = "------------ Compile Error ------------";
+    string ERROR_POSTFIX = "---------------------------------------";
     int ERROR_PREFIX_LEN = ERROR_PREFIX.size() - 1;
 
     map<string, string> primitiveInstructionMap{
@@ -76,13 +77,17 @@ public:
 
     void compileCallCC(Handle handle);
 
-    string createErrorMessage(string message);
-
     string createErrorMessage(string message, Handle handle);
 
-    void handleArbitraryFunction(int j, vector<HandleOrStr> &parameters);
-
     void handleArbitraryFunction(int j, const Handle &lambdaHandle);
+
+    void compileApply(Handle handle);
+
+    void checkWrongArgumentsNumberError(string functionName, int expectedNum, int actualNum);
+
+    void checkWrongArgumentsNumberError(string functionName, int expectedNum, int actualNum, Handle handle);
+
+    void compileApplication(Handle handle, bool isPushChildren);
 };
 
 vector<Instruction> Compiler::compile(AST ast) {
@@ -156,11 +161,7 @@ void Compiler::handleArbitraryFunction(int j, const Handle &lambdaHandle) {
     }
 }
 
-string Compiler::createErrorMessage(string message, Handle handle) {
-    string prefix = this->ERROR_PREFIX;
-    string formattedMessage = prefix + message;
-    utils::coutContext(this->ast, handle, formattedMessage, this->ERROR_PREFIX_LEN);
-};
+
 
 void Compiler::compileHos(HandleOrStr hos) {
     Type hosType = typeOfStr(hos);
@@ -212,6 +213,7 @@ void Compiler::compileApplication(Handle handle) {
     else if (first == "and") { return this->compileAnd(handle); }
     else if (first == "or") { return this->compileOr(handle); }
     else if (first == "fork") { return this->compileFork(handle); }
+    else if (first == "apply") {return this->compileApply(handle); }
 
     if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::APPLICATION) {
         this->compileComplexApplication(handle);
@@ -224,7 +226,6 @@ void Compiler::compileApplication(Handle handle) {
         for (int i = childrenHoses.size() - 1; i >= 1; i--) {
             this->compileHos(childrenHoses[i]);
         }
-        this->addInstruction("pushend " + uniqueStr);
 
 
         // 1. Make sure the first child is valid: native, variable, primitive, lambda
@@ -567,12 +568,82 @@ void Compiler::compileFork(Handle handle) {
     shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
     auto childrenHoses = applicationPtr->childrenHoses;
 
-    if (childrenHoses.size() != 2) {
-        throw std::runtime_error("[compileFork] " + handle + " should have two children");
-    }
+    this->checkWrongArgumentsNumberError("Fork", 2, childrenHoses.size(), handle);
 
     this->addInstruction("fork " + childrenHoses[1]);
+}
 
+void Compiler::compileApply(Handle handle) {
+    shared_ptr<ApplicationObject> applicationPtr = static_pointer_cast<ApplicationObject>(this->ast.get(handle));
+    auto childrenHoses = applicationPtr->childrenHoses;
+
+    this->checkWrongArgumentsNumberError("Apply", 3, childrenHoses.size(), handle);
+
+    this->compileHos(childrenHoses[2]);
+    this->addInstruction("pushlist");
+    // TODO: apply a complex application
+//    this->addInstruction("call " + handle);
+
+    HandleOrStr first = childrenHoses[1];
+    Type firstType = typeOfStr(first);
+    if (first == "import") { return; }
+    else if (first == "native") { return; }
+    else if (first == "call/cc") { return this->compileCallCC(handle); }
+    else if (first == "define") { return this->compileDefine(handle); }
+    else if (first == "set!") { return this->compileSet(handle); }
+    else if (first == "cond") { return this->compileCond(handle); }
+    else if (first == "if") { return this->compileIf(handle); }
+    else if (first == "and") { return this->compileAnd(handle); }
+    else if (first == "or") { return this->compileOr(handle); }
+    else if (first == "fork") { return this->compileFork(handle); }
+    else if (first == "apply") {return this->compileApply(handle); }
+
+    if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::APPLICATION) {
+        this->compileComplexApplication(handle);
+        return;
+    } else if (utils::makeSet<Type>(3, Type::HANDLE, Type::VARIABLE, Type::KEYWORD).count(firstType)) {
+        // 1. Make sure the first child is valid: native, variable, primitive, lambda
+        // 2. handle tailcall
+
+        // Primitive
+        // handle the expected parameters better
+        if (firstType == Type::KEYWORD) {
+            if (this->primitiveInstructionMap.count(first)) {
+                this->addInstruction(this->primitiveInstructionMap[first]);
+            } else {
+                if (first == "cons") {
+                    if (childrenHoses.size() == 1) {
+                        throw std::runtime_error(
+                                "[compileApplication] cons' arguments should more than 0.");
+                    }
+//                    this->addInstruction(
+//                            "push " + to_string(childrenHoses.size() - 1)); // the number of cons application arguments
+                }
+                this->addInstruction(first);
+            }
+        } else if (std::find(this->ast.tailcalls.begin(), this->ast.tailcalls.end(), handle) !=
+                   this->ast.tailcalls.end()) {
+            // we don't has tailcalls right now
+            if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
+                this->addInstruction("tailcall " + first);
+            } else if (firstType == Type::VARIABLE) {
+                // include native
+                this->addInstruction("tailcall " + first);
+            } else {
+                throw std::runtime_error("[compileApplication] the first argument is not callable.");
+            }
+        } else {
+            if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
+                auto lambdaObjPtr = static_pointer_cast<LambdaObject>(this->ast.get(first));
+                this->addInstruction("call @" + first);
+            } else if (firstType == Type::VARIABLE) {
+                // include native
+                this->addInstruction("call " + first);
+            } else {
+                throw std::runtime_error("[compileApplication] the first argument is not callable.");
+            }
+        }
+    }
 }
 
 
@@ -625,6 +696,25 @@ void Compiler::beginCompile() {
 
     for (auto &inst : this->ILCode) {
         cout << inst.instructionStr << endl;
+    }
+}
+
+string Compiler::createErrorMessage(string message, Handle handle) {
+    string prefix = this->ERROR_PREFIX;
+    cout << this->ERROR_PREFIX << endl;
+    utils::coutContext(this->ast, handle, message);
+    cout << this->ERROR_POSTFIX<< endl;
+};
+
+void Compiler::checkWrongArgumentsNumberError(string functionName, int expectedNum, int actualNum, Handle handle) {
+    if (expectedNum != actualNum) {
+        string be = actualNum > 1 ? " are " : " is ";
+        string add_s = expectedNum > 1 ? "s" : "";
+        string message = "[" + functionName + "] expects " + to_string(expectedNum) + " argument" + add_s +
+                ", " +
+                to_string(actualNum) + be + "given";
+        this->createErrorMessage(message, handle);
+        throw std::runtime_error("");
     }
 }
 
