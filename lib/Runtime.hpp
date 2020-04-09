@@ -138,7 +138,7 @@ public:
 
     void ailCdr();
 
-    void ailCons();
+    void ailList();
 
     void ailIfTrue();
 
@@ -253,7 +253,7 @@ void Runtime::execute() {
 
         else if (mnemonic == "car") { this->ailCar(); }
         else if (mnemonic == "cdr") { this->ailCdr(); }
-        else if (mnemonic == "cons") { this->ailCons(); }
+        else if (mnemonic == "list") { this->ailList(); }
 
         else if (mnemonic == "add") { this->ailAdd(); }
         else if (mnemonic == "sub") { this->ailSub(); }
@@ -1119,7 +1119,7 @@ void Runtime::ailCdr() {
     this->currentProcessPtr->step();
 }
 
-void Runtime::ailCons() {
+void Runtime::ailList() {
     // create list, and push it
     // is actually push handle_to_list
 

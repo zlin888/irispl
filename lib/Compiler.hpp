@@ -124,7 +124,7 @@ void Compiler::compileLambda(Handle lambdaHandle) {
     // label, for jumping
     this->addInstruction("@" + lambdaHandle);
 
-    // in-order
+    // in-order, fill the arguments
     for (int j = 0; j < lambdaObjPtr->parameters.size(); ++j) {
         this->addInstruction("store " + lambdaObjPtr->parameters[j]);
 
@@ -137,6 +137,7 @@ void Compiler::compileLambda(Handle lambdaHandle) {
         }
     }
 
+    // execute and return the result(push the result to stack)
     for (int i = 0; i < lambdaObjPtr->bodies.size(); i++) {
         this->compileHos(lambdaObjPtr->bodies[i]);
     }
@@ -237,13 +238,13 @@ void Compiler::compileApplication(Handle handle) {
             if (this->primitiveInstructionMap.count(first)) {
                 this->addInstruction(this->primitiveInstructionMap[first]);
             } else {
-                if (first == "cons") {
+                if (first == "list") {
                     if (childrenHoses.size() == 1) {
                         throw std::runtime_error(
-                                "[compileApplication] cons' arguments should more than 0.");
+                                "[compileApplication] list' arguments should more than 0.");
                     }
 //                    this->addInstruction(
-//                            "push " + to_string(childrenHoses.size() - 1)); // the number of cons application arguments
+//                            "push " + to_string(childrenHoses.size() - 1)); // the number of list application arguments
                 }
                 this->addInstruction(first);
             }
@@ -611,13 +612,13 @@ void Compiler::compileApply(Handle handle) {
             if (this->primitiveInstructionMap.count(first)) {
                 this->addInstruction(this->primitiveInstructionMap[first]);
             } else {
-                if (first == "cons") {
+                if (first == "list") {
                     if (childrenHoses.size() == 1) {
                         throw std::runtime_error(
-                                "[compileApplication] cons' arguments should more than 0.");
+                                "[compileApplication] list' arguments should more than 0.");
                     }
 //                    this->addInstruction(
-//                            "push " + to_string(childrenHoses.size() - 1)); // the number of cons application arguments
+//                            "push " + to_string(childrenHoses.size() - 1)); // the number of list application arguments
                 }
                 this->addInstruction(first);
             }

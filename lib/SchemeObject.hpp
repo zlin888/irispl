@@ -302,7 +302,7 @@ map<Type, string> TypeStrMap = {
 };
 
 set<string> KEYWORDS = {
-        "car", "cdr", "cons", "cond", "if", "else", "begin",
+        "car", "cdr", "list", "cond", "if", "else", "begin",
         "+", "-", "*", "/", "=", "%", "pow",
         "and", "or", "not", ">", "<", ">=", "<=", "eq?",
         "define", "set!", "null?", "atom?", "list?", "number?", "pair?",
@@ -312,7 +312,8 @@ set<string> KEYWORDS = {
         "import", "native",
         "fork",
         "quote", "quasiquote", "unquote",
-        "let", "apply"
+        "let", "apply",
+        "class", "isinstance?",
 };
 
 Type typeOfStr(const string &inputStr) {

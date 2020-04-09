@@ -154,8 +154,9 @@ void Analyser::scopeAnalyse() {
             }
         } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
             auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
-            if (applicationObjPtr->childrenHoses[0] == "define") {
+            if (applicationObjPtr->childrenHoses[0] == "define" || applicationObjPtr->childrenHoses[0] == "class") {
                 // define will init variable, therefore, here, we can find out some of the scope of variables
+                // class is actually a define. Usually we have (class apple xxx), and it is equivalent to (define apple xxx)
                 Handle parentLambdaHandle = getParentLambdaHandle(handle);
 
                 // code is like ( (lambda () (define xxxx xxx) ))

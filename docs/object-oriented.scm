@@ -40,7 +40,7 @@
 (display ((positive-cell 'fetch)))
 (display ((positive-cell 'store!) positive-cell -33))
 
-(display (cons (cons 1 13 88) 99))
+(display (cdr (list (list 1 13 88) 99))) ;; some bugs here
 (display make-filtered-cell)
 (display sub)
 
