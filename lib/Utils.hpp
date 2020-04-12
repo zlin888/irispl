@@ -90,8 +90,9 @@ namespace utils {
         vector<string> fields;
         boost::split(fields, source, boost::is_any_of("\n"));
 
-        int left = line - 1 - 2;
-        int right = line - 1 + 2;
+        int contextLineNum = 2;
+        int left = line - 1 - contextLineNum;
+        int right = line - 1 + contextLineNum;
         for (int i = left; i <= right; i++) {
             // fields[-1] is always '))', used to complete the top_lambda, we don't want to show it to user
             if (i >= 0 && i < fields.size() - 1) {
@@ -105,6 +106,72 @@ namespace utils {
             }
         }
     }
+
+    string generatePrefix(string title) {
+        string prefix = "------------ " + title + " ------------";
+        return prefix;
+    }
+
+    string generatePostfix(int prefixSize) {
+        string postfix = "";
+        for (int j = 0; j < prefixSize; ++j) {
+            postfix += "-";
+        }
+        return postfix;
+
+    }
+
+    string createWrongArgumentsNumberErrorMessage(string functionName, int expectedNum, int actualNum) {
+        string be = actualNum > 1 ? " are " : " is ";
+        string add_s = expectedNum > 1 ? "s" : "";
+        string message = "[" + functionName + "] expects " + to_string(expectedNum) + " argument" + add_s +
+                         ", " + to_string(actualNum) + be + "given";
+        return message;
+    }
+
+    string createWrongArgumentTypeErrorMessage(string functionName, string whichArgument, string expectedType,
+                                               string actualType) {
+        string message =
+                "TypeError: [" + functionName + "]'s " + whichArgument + " should be a " + expectedType + ", a " +
+                actualType + " is given";
+        return message;
+    }
+
+    void raiseError(AST &ast, Handle handle, string message, string prefixTitle) {
+        string prefix = utils::generatePrefix(prefixTitle);
+        string postfix = utils::generatePostfix(prefix.size());
+
+        cout << prefix << endl;
+        utils::coutContext(ast, handle, message);
+        cout << postfix;
+        throw std::runtime_error("");
+    }
+
+    string getActualTypeStr(AST &ast, HandleOrStr hos) {
+
+        // if its a handle, return the schemeObjType
+        // else return the type is fine
+        Type type = typeOfStr(hos);
+        string actualType =
+                type == Type::HANDLE ? SchemeObjectTypeStrMap[ast.get(hos)->schemeObjectType] : TypeStrMap[type];
+        return actualType;
+    }
+
+    bool assertType(HandleOrStr hos, Type type) {
+        if (typeOfStr(hos) != type) {
+            return false;
+        }
+        return true;
+    }
+
+    bool assertType(AST &ast, HandleOrStr hos, SchemeObjectType schemeObjectType) {
+        if (typeOfStr(hos) == Type::HANDLE && ast.get(hos)->schemeObjectType == schemeObjectType) {
+            return true;
+        }
+        return false;
+    }
+
+
 
 }
 

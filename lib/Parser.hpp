@@ -60,11 +60,19 @@ public:
 
     void addLambdaHandle(Handle handle);
 
-    void coutContext(Handle handle);
-
     void setHandleSourceIndexMapping(Handle handle, int index);
 
+    Handle makeLambda(string prefix, Handle parentHandle);
+
 };
+
+Handle AST::makeLambda(string prefix, Handle parentHandle) {
+    Handle lambdaHandle = this->heap.makeLambda(prefix, parentHandle);
+    this->addLambdaHandle(lambdaHandle);
+    this->setHandleSourceIndexMapping(lambdaHandle, this->sourceCodeMapper.getIndex(parentHandle));
+
+    return lambdaHandle;
+}
 
 void AST::setHandleSourceIndexMapping(Handle handle, int index) {
     this->sourceCodeMapper.setHandleSourceIndexMapping(handle, index, this->moduleName);

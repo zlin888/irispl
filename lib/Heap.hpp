@@ -80,7 +80,6 @@ Handle Heap::allocateHandle(const string &prefix, SchemeObjectType schemeObjectT
 }
 
 Handle Heap::makeLambda(const string &prefix, Handle parentHandle) {
-    // NOTE 每个节点把柄都带有模块全限定名，这样做的目的是：不必在AST融合过程中调整每个AST的把柄。下同。
     Handle handle = this->allocateHandle(prefix, SchemeObjectType::LAMBDA);
     this->set(handle, std::shared_ptr<LambdaObject>(new LambdaObject(parentHandle, handle)));
     return handle;

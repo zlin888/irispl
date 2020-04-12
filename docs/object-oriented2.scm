@@ -24,13 +24,14 @@
 
 (class filter-cell (value filter)
   (super (simple-cell value))
-  (store 
+  ((store 
     (lambda (self new-value)
       (if (positive-filter new-value)
           ((super 'store!) new-value)
           error)))
   (double
     (lambda (self) (set! value (* 2 value)))))
+    )
 
 (define a-cell (filter-cell 17 filter))
 (=> a-cell.store 1 2 3 4 5 6 7 8 9)

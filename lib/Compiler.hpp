@@ -83,11 +83,8 @@ public:
 
     void compileApply(Handle handle);
 
-    void checkWrongArgumentsNumberError(string functionName, int expectedNum, int actualNum);
 
     void checkWrongArgumentsNumberError(string functionName, int expectedNum, int actualNum, Handle handle);
-
-    void compileApplication(Handle handle, bool isPushChildren);
 };
 
 vector<Instruction> Compiler::compile(AST ast) {

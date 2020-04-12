@@ -12,11 +12,17 @@
 namespace Transfer {
 
     string TRANSFER_PREFIX = "_!!!transfer_prefix!!!_";
+    string TRANSFER_PREFIX_TITLE = "Transfer Error";
 
     void transferLet(AST &ast);
 
+    void transferClass(AST &ast);
+
+    void raiseError(AST &ast, Handle handle, string message);
+
     void transfer(AST &ast) {
         Transfer::transferLet(ast);
+        Transfer::transferClass(ast);
     }
 
     void transferLet(AST &ast) {
@@ -33,7 +39,7 @@ namespace Transfer {
             if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
 
                 auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
-                if (applicationObjPtr->childrenHoses[0] == "let") {
+                if (applicationObjPtr->childrenHoses.size() >= 1 && applicationObjPtr->childrenHoses[0] == "let") {
 
                     if (applicationObjPtr->childrenHoses.size() != 3) {
                         throw std::runtime_error(
@@ -99,6 +105,77 @@ namespace Transfer {
                             ast.heap.deleteHandle(bindingHandle);
                         }
                     }
+                }
+            }
+        }
+    }
+
+    void transferClass(AST &ast) {
+        for (auto handle : ast.getHandles()) {
+            shared_ptr<SchemeObject> schemeObjPtr;
+            try {
+                schemeObjPtr = ast.get(handle);
+            } catch (exception &e) {
+                // the code below will delete some applicationObj from heap, therefore, we need to skip the deleted handle here
+                continue;
+            }
+
+
+            if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+                auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
+                if (applicationObjPtr->childrenHoses[0] == "class") {
+                    // inside of the class application
+
+                    // class should has 5 children
+                    if (applicationObjPtr->childrenHoses.size() != 5) {
+                        string errorMessage = utils::createWrongArgumentsNumberErrorMessage("class", 5,
+                                                                                            applicationObjPtr->childrenHoses.size());
+                        utils::raiseError(ast, handle, errorMessage, TRANSFER_PREFIX_TITLE);
+                    }
+
+                    // second children is variable
+                    if (!utils::assertType(applicationObjPtr->childrenHoses[1], Type::VARIABLE)) {
+                        string errorMessage = utils::createWrongArgumentTypeErrorMessage("class", "first argument",
+                                                                                         TypeStrMap[Type::VARIABLE],
+                                                                                         utils::getActualTypeStr(ast,
+                                                                                                                 applicationObjPtr->childrenHoses[1]));
+                        utils::raiseError(ast, handle, errorMessage, TRANSFER_PREFIX_TITLE);
+                    }
+
+                    // the rest of children are applications
+                    for (int k = 2; k < 5; ++k) {
+                        if (!utils::assertType(ast, applicationObjPtr->childrenHoses[k],
+                                               SchemeObjectType::APPLICATION)) {
+                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class", "first argument",
+                                                                                             SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
+                                                                                             applicationObjPtr->childrenHoses[k]);
+                            utils::raiseError(ast, handle, errorMessage, TRANSFER_PREFIX_TITLE);
+                        }
+                    }
+
+
+                    // 1. change the class -> define
+                    applicationObjPtr->childrenHoses[0] = "define";
+                    // 2. create a lambda and set childrenHoses[2] as it parameters
+                    auto newLambdaHandle = ast.makeLambda(TRANSFER_PREFIX, applicationObjPtr->selfHandle);
+                    auto newLambdaObjPtr = static_pointer_cast<LambdaObject>(ast.get(newLambdaHandle));
+                    auto childrenHos2AppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(applicationObjPtr->childrenHoses[2]));
+                    for (auto hos : childrenHos2AppObjPtr->childrenHoses) {
+                        newLambdaObjPtr->addParameter(hos);
+                    }
+                    // 3. 
+
+                    for (int j = 0; j < applicationObjPtr->childrenHoses.size(); ++j) {
+                        auto hos = applicationObjPtr->childrenHoses[j];
+                        if (typeOfStr(hos) == Type::HANDLE) {
+                            auto hosObjPtr = ast.get(hos);
+                            if (hosObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+                                auto hosAppObjPtr = static_pointer_cast<ApplicationObject>(hosObjPtr);
+                                int i = 1;
+                            }
+                        }
+                    }
+
                 }
             }
         }
