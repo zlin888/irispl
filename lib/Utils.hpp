@@ -137,6 +137,14 @@ namespace utils {
         return message;
     }
 
+    string createWrongKeywordErrorMessage(string functionName, string whichArgument, string expectedName,
+                                          string actualName) {
+        string message =
+                "KeywordError: [" + functionName + "]'s " + whichArgument + " should be a " + expectedName + ", a " +
+                actualName + " is given";
+        return message;
+    }
+
     void raiseError(AST &ast, Handle handle, string message, string prefixTitle) {
         string prefix = utils::generatePrefix(prefixTitle);
         string postfix = utils::generatePostfix(prefix.size());
@@ -170,7 +178,6 @@ namespace utils {
         }
         return false;
     }
-
 
 
 }

@@ -139,7 +139,8 @@ namespace Transfer {
                                                                                          TypeStrMap[Type::VARIABLE],
                                                                                          utils::getActualTypeStr(ast,
                                                                                                                  applicationObjPtr->childrenHoses[1]));
-                        utils::raiseError(ast, handle, errorMessage, TRANSFER_PREFIX_TITLE);
+                        utils::raiseError(ast, applicationObjPtr->childrenHoses[1], errorMessage,
+                                          TRANSFER_PREFIX_TITLE);
                     }
 
                     // the rest of children are applications
@@ -149,17 +150,34 @@ namespace Transfer {
                             string errorMessage = utils::createWrongArgumentTypeErrorMessage("class", "first argument",
                                                                                              SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
                                                                                              applicationObjPtr->childrenHoses[k]);
-                            utils::raiseError(ast, handle, errorMessage, TRANSFER_PREFIX_TITLE);
+                            utils::raiseError(ast, applicationObjPtr->childrenHoses[k], errorMessage,
+                                              TRANSFER_PREFIX_TITLE);
                         }
                     }
 
+                    Handle originSuperAppHandle = applicationObjPtr->childrenHoses[3];
+                    auto originSuperAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(originSuperAppHandle));
+
+                    if (originSuperAppObjPtr->childrenHoses.size() != 2) {
+                        string errorMessage = utils::createWrongArgumentsNumberErrorMessage("class.method", 2,
+                                                                                            originSuperAppObjPtr->childrenHoses.size());
+                        utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
+                    }
+
+                    if (originSuperAppObjPtr->childrenHoses[0] != "super") {
+                        string errorMessage = utils::createWrongKeywordErrorMessage("class.method", "first argument",
+                                                                                    "super",
+                                                                                    originSuperAppObjPtr->childrenHoses[0]);
+                        utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
+                    }
 
                     // 1. change the class -> define
                     applicationObjPtr->childrenHoses[0] = "define";
                     // 2. create a lambda and set childrenHoses[2] as it parameters
                     auto newLambdaHandle = ast.makeLambda(TRANSFER_PREFIX, applicationObjPtr->selfHandle);
                     auto newLambdaObjPtr = static_pointer_cast<LambdaObject>(ast.get(newLambdaHandle));
-                    auto childrenHos2AppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(applicationObjPtr->childrenHoses[2]));
+                    auto childrenHos2AppObjPtr = static_pointer_cast<ApplicationObject>(
+                            ast.get(applicationObjPtr->childrenHoses[2]));
                     for (auto hos : childrenHos2AppObjPtr->childrenHoses) {
                         newLambdaObjPtr->addParameter(hos);
                     }
