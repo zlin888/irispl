@@ -12,6 +12,8 @@
 #include <map>
 #include <set>
 
+string ANALYZER_PREFIX = "_!!!analyzer_prefix!!!_";
+string ANALYZER_PREFIX_TITLE = "Analyzer Error";
 
 class Scope {
 public:
@@ -165,7 +167,8 @@ void Analyser::scopeAnalyse() {
                     string variable = applicationObjPtr->childrenHoses[1];
                     scopes[parentLambdaHandle].addBoundVariables(variable);
                 } else {
-                    throw std::runtime_error("[scope analysis] error in 'define', where " + handle + "doesn't have parent lambda ");
+                    throw std::runtime_error(
+                            "[scope analysis] error in 'define', where " + handle + "doesn't have parent lambda ");
                 }
             }
         }
@@ -231,7 +234,8 @@ void Analyser::scopeAnalyse() {
                     Handle boundLambdaHandle = this->searchVariableLambdaHandle(hos, handle);
                     if (boundLambdaHandle.empty()) {
                         if (!this->isNativeOrImportVariable(hos)) {
-                            throw std::runtime_error("[scope analysis] variable " + hos + " is not defined");
+                            string errorMessage = utils::createVariableUndefinedMessage(hos);
+                            utils::raiseError(ast, schemeObjPtr->selfHandle, errorMessage, ANALYZER_PREFIX_TITLE);
                         }
                     } else {
                         string uniqueName = this->makeUniqueVariableName(boundLambdaHandle, hos);
@@ -244,14 +248,13 @@ void Analyser::scopeAnalyse() {
 
             // finally, set the definedVarUniqueOriginNameMap,
             // Because the name of the defined variable has been changed
-            if(childrenHoses[0] == "define" && parentHandle == this->ast.getTopLambdaHandle()) {
+            if (childrenHoses[0] == "define" && parentHandle == this->ast.getTopLambdaHandle()) {
                 string uniqueName = childrenHoses[1];
                 string originName = this->ast.varUniqueOriginNameMap[uniqueName];
 
-                if(this->ast.definedVarOriginUniqueNameMap.count(originName)) {
+                if (this->ast.definedVarOriginUniqueNameMap.count(originName)) {
                     throw std::runtime_error("[scope analysis] define variable " + originName + " repeatedly");
-                }
-                else {
+                } else {
                     this->ast.definedVarOriginUniqueNameMap[originName] = uniqueName;
                 }
             }
@@ -262,7 +265,6 @@ void Analyser::scopeAnalyse() {
 void Analyser::tailCallAnalyse() {
 
 }
-
 
 
 AST Analyser::analyse(AST ast) {

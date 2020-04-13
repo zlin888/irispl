@@ -121,27 +121,33 @@ namespace utils {
 
     }
 
-    string createWrongArgumentsNumberErrorMessage(string functionName, int expectedNum, int actualNum) {
+    string createArgumentsNumberErrorMessage(string functionName, int expectedNum, int actualNum) {
         string be = actualNum > 1 ? " are " : " is ";
         string add_s = expectedNum > 1 ? "s" : "";
-        string message = "[" + functionName + "] expects " + to_string(expectedNum) + " argument" + add_s +
+        string message = "[ArgumentNumberError] " + functionName + " expects " + to_string(expectedNum) + " argument" + add_s +
                          ", " + to_string(actualNum) + be + "given";
         return message;
     }
 
-    string createWrongArgumentTypeErrorMessage(string functionName, string whichArgument, string expectedType,
-                                               string actualType) {
+    string createArgumentTypeErrorMessage(string functionName, string whichArgument, string expectedType,
+                                          string actualType) {
         string message =
-                "TypeError: [" + functionName + "]'s " + whichArgument + " should be a " + expectedType + ", a " +
+                "[TypeError] " + functionName + "'s " + whichArgument + " should be a " + expectedType + ", a " +
                 actualType + " is given";
         return message;
     }
 
-    string createWrongKeywordErrorMessage(string functionName, string whichArgument, string expectedName,
-                                          string actualName) {
+    string createKeywordErrorMessage(string functionName, string whichArgument, string expectedName,
+                                     string actualName) {
         string message =
-                "KeywordError: [" + functionName + "]'s " + whichArgument + " should be a " + expectedName + ", a " +
+                "[KeywordError] " + functionName + "'s " + whichArgument + " should be a " + expectedName + ", a " +
                 actualName + " is given";
+        return message;
+    }
+
+    string createVariableUndefinedMessage(string variableName) {
+        string message =
+                "[UndefinedError] variable '" + variableName + "' used but is undefined";
         return message;
     }
 
