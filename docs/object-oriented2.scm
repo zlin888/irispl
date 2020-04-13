@@ -1,6 +1,6 @@
 (define error 'error)
 
-(define make-simple-cell
+(define simple-cell
     (lambda (value)
         (lambda (selector)
             (cond ((eq? selector 'fetch) (lambda () value))
@@ -13,7 +13,7 @@
 
 (define make-filtered-cell
     (lambda (value filter)
-        (let ((super (make-simple-cell value)))
+        (let ((super (simple-cell value)))
             (lambda (selector)
                 (cond ((eq? selector 'store!)
                         (lambda (self new-value) 

@@ -59,6 +59,8 @@ public:
     Handle makeQuote(string prefix, Handle parentHandle);
 
     void deleteHandleRecursivly(HandleOrStr hos);
+
+    void deleteHandle(HandleOrStr hos);
 };
 
 Handle AST::makeLambda(string prefix, Handle parentHandle) {
@@ -99,6 +101,14 @@ void AST::deleteHandleRecursivly(HandleOrStr hos) {
         }
     } catch (exception &e) {
         //pass
+    }
+}
+
+void AST::deleteHandle(HandleOrStr hos) {
+    if(typeOfStr(hos) == Type::HANDLE) {
+        if(this->heap.hasHandle(hos)) {
+            this->heap.deleteHandle(hos);
+        }
     }
 }
 

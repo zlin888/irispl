@@ -139,7 +139,7 @@ namespace Transfer {
                                                                                          TypeStrMap[Type::VARIABLE],
                                                                                          utils::getActualTypeStr(ast,
                                                                                                                  applicationObjPtr->childrenHoses[1]));
-                        utils::raiseError(ast, applicationObjPtr->childrenHoses[1], errorMessage,
+                        utils::raiseError(ast, handle, errorMessage,
                                           TRANSFER_PREFIX_TITLE);
                     }
 
@@ -150,50 +150,208 @@ namespace Transfer {
                             string errorMessage = utils::createWrongArgumentTypeErrorMessage("class", "first argument",
                                                                                              SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
                                                                                              applicationObjPtr->childrenHoses[k]);
-                            utils::raiseError(ast, applicationObjPtr->childrenHoses[k], errorMessage,
+                            utils::raiseError(ast, handle, errorMessage,
                                               TRANSFER_PREFIX_TITLE);
                         }
                     }
 
+
+                    // (super (father-class arg0 arg1))
                     Handle originSuperAppHandle = applicationObjPtr->childrenHoses[3];
                     auto originSuperAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(originSuperAppHandle));
 
                     if (originSuperAppObjPtr->childrenHoses.size() != 2) {
-                        string errorMessage = utils::createWrongArgumentsNumberErrorMessage("class.method", 2,
+                        string errorMessage = utils::createWrongArgumentsNumberErrorMessage("class.super", 2,
                                                                                             originSuperAppObjPtr->childrenHoses.size());
                         utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                     }
 
                     if (originSuperAppObjPtr->childrenHoses[0] != "super") {
-                        string errorMessage = utils::createWrongKeywordErrorMessage("class.method", "first argument",
+                        string errorMessage = utils::createWrongKeywordErrorMessage("class.super", "first argument",
                                                                                     "super",
                                                                                     originSuperAppObjPtr->childrenHoses[0]);
                         utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                     }
 
-                    // 1. change the class -> define
-                    applicationObjPtr->childrenHoses[0] = "define";
-                    // 2. create a lambda and set childrenHoses[2] as it parameters
-                    auto newLambdaHandle = ast.makeLambda(TRANSFER_PREFIX, applicationObjPtr->selfHandle);
-                    auto newLambdaObjPtr = static_pointer_cast<LambdaObject>(ast.get(newLambdaHandle));
-                    auto childrenHos2AppObjPtr = static_pointer_cast<ApplicationObject>(
-                            ast.get(applicationObjPtr->childrenHoses[2]));
-                    for (auto hos : childrenHos2AppObjPtr->childrenHoses) {
-                        newLambdaObjPtr->addParameter(hos);
-                    }
-                    // 3. 
 
-                    for (int j = 0; j < applicationObjPtr->childrenHoses.size(); ++j) {
-                        auto hos = applicationObjPtr->childrenHoses[j];
-                        if (typeOfStr(hos) == Type::HANDLE) {
-                            auto hosObjPtr = ast.get(hos);
-                            if (hosObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
-                                auto hosAppObjPtr = static_pointer_cast<ApplicationObject>(hosObjPtr);
-                                int i = 1;
-                            }
+                    // (class filter-cell  -> (value filter) <-
+                    Handle originArgumentAppHandle = applicationObjPtr->childrenHoses[2];
+                    auto originArgumentAppObjPtr = static_pointer_cast<ApplicationObject>(
+                            ast.get(originArgumentAppHandle));
+
+                    // they are all variable
+                    for (int i = 0; i < originArgumentAppObjPtr->childrenHoses.size(); i++) {
+                        auto hos = originArgumentAppObjPtr->childrenHoses[i];
+                        if (!utils::assertType(hos, Type::VARIABLE)) {
+                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.argument",
+                                                                                             "argument " + to_string(i),
+                                                                                             TypeStrMap[Type::VARIABLE],
+                                                                                             utils::getActualTypeStr(
+                                                                                                     ast, hos));
+                            utils::raiseError(ast, originArgumentAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                         }
                     }
 
+                    // methods should be an application. each child should also be an application. childApp's children's
+                    // size should be 2, the first child should be a variable
+                    // ((store (lambda xxxx))
+                    //  (double (lambda xxx)))
+                    Handle originMethodsAppHandle = applicationObjPtr->childrenHoses[4];
+                    auto originMethodsAppObjPtr = static_pointer_cast<ApplicationObject>(
+                            ast.get(originMethodsAppHandle));
+
+                    for (int i = 0; i < originMethodsAppObjPtr->childrenHoses.size(); i++) {
+                        // application
+                        if (!utils::assertType(ast, originMethodsAppObjPtr->childrenHoses[i],
+                                               SchemeObjectType::APPLICATION)) {
+                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.methods",
+                                                                                             "method " + to_string(i),
+                                                                                             SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
+                                                                                             utils::getActualTypeStr(
+                                                                                                     ast,
+                                                                                                     originMethodsAppObjPtr->childrenHoses[i]));
+                            utils::raiseError(ast, originMethodsAppHandle, errorMessage,
+                                              TRANSFER_PREFIX_TITLE);
+                        }
+
+                        // size of 2
+                        Handle childAppHandle = originMethodsAppObjPtr->childrenHoses[i];
+                        auto childAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(childAppHandle));
+                        if (childAppObjPtr->childrenHoses.size() != 2) {
+                            string errorMessage = utils::createWrongArgumentsNumberErrorMessage("class.methods", 2,
+                                                                                                childAppObjPtr->childrenHoses.size());
+                            utils::raiseError(ast, childAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
+                        }
+
+                        // first child is variable
+                        if (!utils::assertType(childAppObjPtr->childrenHoses[0], Type::VARIABLE)) {
+                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.methods",
+                                                                                             "method " + to_string(i) +
+                                                                                             "'s first argument",
+                                                                                             TypeStrMap[Type::VARIABLE],
+                                                                                             utils::getActualTypeStr(
+                                                                                                     ast,
+                                                                                                     childAppObjPtr->childrenHoses[0]));
+                            utils::raiseError(ast, childAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
+                        }
+
+
+                    }
+
+
+                    // 1. change the class -> define
+                    applicationObjPtr->childrenHoses[0] = "define";
+                    // 2. create a lambda and set originArgumentAppHandle's children as it parameters
+                    auto newLambdaHandle = ast.makeLambda(TRANSFER_PREFIX, applicationObjPtr->selfHandle);
+                    auto newLambdaObjPtr = static_pointer_cast<LambdaObject>(ast.get(newLambdaHandle));
+                    applicationObjPtr->addChild(newLambdaHandle);
+
+                    for (auto hos : originArgumentAppObjPtr->childrenHoses) {
+                        newLambdaObjPtr->addParameter(hos);
+                    }
+
+                    // 3. let
+                    auto letAppHandle = ast.makeApplication(TRANSFER_PREFIX, newLambdaHandle);
+                    auto letAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(letAppHandle));
+                    newLambdaObjPtr->addBody(letAppHandle);
+
+                    auto bindingContainerAppHandle = ast.makeApplication(TRANSFER_PREFIX, letAppHandle);
+                    auto bindingContainerAppObjPtr = static_pointer_cast<ApplicationObject>(
+                            ast.get(bindingContainerAppHandle));
+                    letAppObjPtr->addChild(bindingContainerAppHandle);
+
+                    auto binding0AppHandle = ast.makeApplication(TRANSFER_PREFIX, bindingContainerAppHandle);
+                    auto binding0AppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(binding0AppHandle));
+                    bindingContainerAppObjPtr->addChild(binding0AppHandle);
+
+                    binding0AppObjPtr->addChild("super");
+
+                    // (super (father-class arg0 arg1))
+                    // (super father-class)
+                    // for the first case
+                    if (typeOfStr(originSuperAppObjPtr->childrenHoses[1]) == Type::HANDLE) {
+                        if (!utils::assertType(ast, originSuperAppObjPtr->childrenHoses[1],
+                                               SchemeObjectType::APPLICATION)) {
+                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.super",
+                                                                                             "second argument",
+                                                                                             SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
+                                                                                             utils::getActualTypeStr(
+                                                                                                     ast,
+                                                                                                     originSuperAppObjPtr->childrenHoses[1]));
+                            utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
+                        } else {
+                            auto binding0InitAppHandle = ast.makeApplication(TRANSFER_PREFIX, binding0AppHandle);
+                            auto binding0InitAppObjPtr = static_pointer_cast<ApplicationObject>(
+                                    ast.get(binding0InitAppHandle));
+                            binding0AppObjPtr->addChild(binding0InitAppHandle);
+
+                            // move them
+                            auto originSuperChildren1AppHandle = originSuperAppObjPtr->childrenHoses[1];
+                            auto originSuperChildren1AppObjPtr = static_pointer_cast<ApplicationObject>(
+                                    ast.get(originSuperChildren1AppHandle));
+                            for (auto hos : originSuperChildren1AppObjPtr->childrenHoses) {
+                                binding0InitAppObjPtr->addChild(hos);
+                            }
+
+                            // delete the children1 prevent it being deleted
+                            originSuperAppObjPtr->childrenHoses.pop_back();
+                        }
+                    } else {
+                        // for the second case
+                        if (!utils::assertType(originSuperAppObjPtr->childrenHoses[1],
+                                               Type::VARIABLE)) {
+                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.super",
+                                                                                             "second argument",
+                                                                                             TypeStrMap[Type::VARIABLE],
+                                                                                             utils::getActualTypeStr(
+                                                                                                     ast,
+                                                                                                     originSuperAppObjPtr->childrenHoses[1]));
+                            utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
+                        } else {
+                            binding0AppObjPtr->addChild(originSuperAppObjPtr->childrenHoses[1]);
+                        }
+                    }
+
+                    auto letBodyLambdaHandle = ast.makeLambda(TRANSFER_PREFIX, letAppHandle);
+                    auto letBodyLambdaObjPtr = static_pointer_cast<LambdaObject>(ast.get(letBodyLambdaHandle));
+
+                    letAppObjPtr->addChild(letBodyLambdaHandle);
+
+                    letBodyLambdaObjPtr->addParameter("_selector");
+
+                    auto condAppHandle = ast.makeApplication(TRANSFER_PREFIX, letBodyLambdaHandle);
+                    auto condAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(condAppHandle));
+
+                    letBodyLambdaObjPtr->addBody(condAppHandle);
+
+                    for (auto methodAppHandle : originMethodsAppObjPtr->childrenHoses) {
+                        auto methodAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(methodAppHandle));
+
+                        auto condBranchAppHandle = ast.makeApplication(TRANSFER_PREFIX, condAppHandle);
+                        auto condBranchAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(condBranchAppHandle));
+                        condAppObjPtr->addChild(condBranchAppHandle);
+
+                        auto condBranchPredicateAppHandle = ast.makeApplication(TRANSFER_PREFIX, condBranchAppHandle);
+                        auto condBranchPredicateAppObjPtr = static_pointer_cast<ApplicationObject>(
+                                ast.get(condBranchPredicateAppHandle));
+                        condBranchAppObjPtr->addChild(condBranchPredicateAppHandle);
+
+//                        auto condBranchBodyAppHandle = ast.makeApplication(TRANSFER_PREFIX, condBranchAppHandle);
+//                        auto condBranchBodyAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(condBranchBodyAppHandle));
+//                        condBranchAppObjPtr->addChild(condBranchBodyAppHandle);
+
+                        condBranchPredicateAppObjPtr->addChild("eq?");
+                        condBranchPredicateAppObjPtr->addChild("_selector");
+
+                        auto selectionQuoteHandle = ast.makeQuote(TRANSFER_PREFIX, condBranchPredicateAppHandle);
+                        auto selectionQuoteObjPtr = static_pointer_cast<QuoteObject>(ast.get(selectionQuoteHandle));
+                        condBranchPredicateAppObjPtr->addChild(selectionQuoteHandle);
+
+                        selectionQuoteObjPtr->addChild(methodAppObjPtr->childrenHoses[0]);
+                        condBranchAppObjPtr->addChild(methodAppObjPtr->childrenHoses[1]);
+                    }
+
+                    int i = 1;
                 }
             }
         }
