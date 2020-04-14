@@ -244,7 +244,6 @@ namespace Transfer {
                     // 2. create a lambda and set originArgumentAppHandle's children as it parameters
                     auto newLambdaHandle = ast.makeLambda(TRANSFER_PREFIX, applicationObjPtr->selfHandle);
                     auto newLambdaObjPtr = static_pointer_cast<LambdaObject>(ast.get(newLambdaHandle));
-                    applicationObjPtr->addChild(newLambdaHandle);
 
                     for (auto hos : originArgumentAppObjPtr->childrenHoses) {
                         newLambdaObjPtr->addParameter(hos);
@@ -295,7 +294,7 @@ namespace Transfer {
                             }
 
                             // delete the children1 prevent it being deleted
-                            originSuperAppObjPtr->childrenHoses.pop_back();
+                            // originSuperAppObjPtr->childrenHoses.pop_back();
                         }
                     } else {
                         // for the second case
@@ -350,6 +349,10 @@ namespace Transfer {
 
                         selectionQuoteObjPtr->addChild(methodAppObjPtr->childrenHoses[0]);
                         condBranchAppObjPtr->addChild(methodAppObjPtr->childrenHoses[1]);
+                        if (typeOfStr(methodAppObjPtr->childrenHoses[1]) == Type::HANDLE) {
+                            auto schemeObjPtr = ast.get(methodAppObjPtr->childrenHoses[1]);
+                            schemeObjPtr->parentHandle = condBranchAppHandle;
+                        }
                     }
 
                     // delete handle

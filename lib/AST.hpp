@@ -5,6 +5,7 @@
 #ifndef IRIS_AST_HPP
 #define IRIS_AST_HPP
 
+#include "Utils.hpp"
 
 class AST {
 public:

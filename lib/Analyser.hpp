@@ -79,7 +79,7 @@ public:
 Handle Analyser::searchVariableLambdaHandle(string var, Handle fromHandle) {
     Handle currentHandle = fromHandle;
     while (currentHandle != TOP_NODE_HANDLE) {
-        auto schemeObjPtr = this->ast.heap.get(currentHandle);
+        auto schemeObjPtr = this->ast.get(currentHandle);
         if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
             if (this->scopes[currentHandle].hasVariable(var)) {
                 return currentHandle;
@@ -231,7 +231,14 @@ void Analyser::scopeAnalyse() {
             for (HandleOrStr &hos : childrenHoses) {
                 if (typeOfStr(hos) == Type::VARIABLE) {
                     // find the bounded lambda
-                    Handle boundLambdaHandle = this->searchVariableLambdaHandle(hos, handle);
+                    Handle boundLambdaHandle;
+                    try {
+                        boundLambdaHandle = this->searchVariableLambdaHandle(hos, handle);
+                    } catch (exception &e) {
+                        auto objPtr = static_pointer_cast<ApplicationObject>(ast.get(handle));
+                        utils::raiseError(ast, handle, "hos " + hos + "'s parent Handle " + handle + " not found", ANALYZER_PREFIX);
+                    }
+
                     if (boundLambdaHandle.empty()) {
                         if (!this->isNativeOrImportVariable(hos)) {
                             string errorMessage = utils::createVariableUndefinedMessage(hos);

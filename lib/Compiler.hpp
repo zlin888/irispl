@@ -15,6 +15,9 @@
 
 using namespace std;
 
+string COMPILER_PREFIX = "_!!!compiler_prefix!!!_";
+string COMPILER_PREFIX_TITLE = "Compile Error";
+
 class Compiler {
 public:
     AST ast;
@@ -323,7 +326,8 @@ void Compiler::compileDefine(Handle handle) {
     auto childrenHoses = applicationPtr->childrenHoses;
 
     if (childrenHoses.size() != 3) {
-        throw std::runtime_error("[compileDefine] define " + handle + " should have only two children");
+        string errorMessage = utils::createArgumentsNumberErrorMessage("define", 3, childrenHoses.size());
+        utils::raiseError(ast, handle, errorMessage, COMPILER_PREFIX_TITLE);
     }
 
     if (typeOfStr(childrenHoses[1]) != Type::VARIABLE) {

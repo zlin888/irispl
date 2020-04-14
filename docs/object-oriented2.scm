@@ -33,6 +33,12 @@
     (lambda (self) (set! value (* 2 value)))))
     )
 
-(define a-cell (filter-cell 17 filter))
-(=> a-cell.store 1 2 3 4 5 6 7 8 9)
+(define =>
+  (lambda (instance method . args)
+    (let ((_method (instance method)))
+      (apply _method args))))
+
+(define a-cell (filter-cell 17 positive-filter))
+
+(=> a-cell 'store 1 2 3 4 5 6 7 8 9)
 ; (isinstance? a-cell) => true
