@@ -21,8 +21,8 @@ namespace Transfer {
     void raiseError(AST &ast, Handle handle, string message);
 
     void transfer(AST &ast) {
-        Transfer::transferLet(ast);
         Transfer::transferClass(ast);
+        Transfer::transferLet(ast);
     }
 
     void transferLet(AST &ast) {
@@ -128,17 +128,17 @@ namespace Transfer {
 
                     // class should has 5 children
                     if (applicationObjPtr->childrenHoses.size() != 5) {
-                        string errorMessage = utils::createWrongArgumentsNumberErrorMessage("class", 5,
-                                                                                            applicationObjPtr->childrenHoses.size());
+                        string errorMessage = utils::createArgumentsNumberErrorMessage("class", 5,
+                                                                                       applicationObjPtr->childrenHoses.size());
                         utils::raiseError(ast, handle, errorMessage, TRANSFER_PREFIX_TITLE);
                     }
 
                     // second children is variable
                     if (!utils::assertType(applicationObjPtr->childrenHoses[1], Type::VARIABLE)) {
-                        string errorMessage = utils::createWrongArgumentTypeErrorMessage("class", "first argument",
-                                                                                         TypeStrMap[Type::VARIABLE],
-                                                                                         utils::getActualTypeStr(ast,
-                                                                                                                 applicationObjPtr->childrenHoses[1]));
+                        string errorMessage = utils::createArgumentTypeErrorMessage("class", "first argument",
+                                                                                    TypeStrMap[Type::VARIABLE],
+                                                                                    utils::getActualTypeStr(ast,
+                                                                                                            applicationObjPtr->childrenHoses[1]));
                         utils::raiseError(ast, handle, errorMessage,
                                           TRANSFER_PREFIX_TITLE);
                     }
@@ -147,9 +147,9 @@ namespace Transfer {
                     for (int k = 2; k < 5; ++k) {
                         if (!utils::assertType(ast, applicationObjPtr->childrenHoses[k],
                                                SchemeObjectType::APPLICATION)) {
-                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class", "first argument",
-                                                                                             SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
-                                                                                             applicationObjPtr->childrenHoses[k]);
+                            string errorMessage = utils::createArgumentTypeErrorMessage("class", "first argument",
+                                                                                        SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
+                                                                                        applicationObjPtr->childrenHoses[k]);
                             utils::raiseError(ast, handle, errorMessage,
                                               TRANSFER_PREFIX_TITLE);
                         }
@@ -161,15 +161,15 @@ namespace Transfer {
                     auto originSuperAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(originSuperAppHandle));
 
                     if (originSuperAppObjPtr->childrenHoses.size() != 2) {
-                        string errorMessage = utils::createWrongArgumentsNumberErrorMessage("class.super", 2,
-                                                                                            originSuperAppObjPtr->childrenHoses.size());
+                        string errorMessage = utils::createArgumentsNumberErrorMessage("class.super", 2,
+                                                                                       originSuperAppObjPtr->childrenHoses.size());
                         utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                     }
 
                     if (originSuperAppObjPtr->childrenHoses[0] != "super") {
-                        string errorMessage = utils::createWrongKeywordErrorMessage("class.super", "first argument",
-                                                                                    "super",
-                                                                                    originSuperAppObjPtr->childrenHoses[0]);
+                        string errorMessage = utils::createKeywordErrorMessage("class.super", "first argument",
+                                                                               "super",
+                                                                               originSuperAppObjPtr->childrenHoses[0]);
                         utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                     }
 
@@ -183,11 +183,11 @@ namespace Transfer {
                     for (int i = 0; i < originArgumentAppObjPtr->childrenHoses.size(); i++) {
                         auto hos = originArgumentAppObjPtr->childrenHoses[i];
                         if (!utils::assertType(hos, Type::VARIABLE)) {
-                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.argument",
-                                                                                             "argument " + to_string(i),
-                                                                                             TypeStrMap[Type::VARIABLE],
-                                                                                             utils::getActualTypeStr(
-                                                                                                     ast, hos));
+                            string errorMessage = utils::createArgumentTypeErrorMessage("class.argument",
+                                                                                        "argument " + to_string(i),
+                                                                                        TypeStrMap[Type::VARIABLE],
+                                                                                        utils::getActualTypeStr(
+                                                                                                ast, hos));
                             utils::raiseError(ast, originArgumentAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                         }
                     }
@@ -204,12 +204,12 @@ namespace Transfer {
                         // application
                         if (!utils::assertType(ast, originMethodsAppObjPtr->childrenHoses[i],
                                                SchemeObjectType::APPLICATION)) {
-                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.methods",
-                                                                                             "method " + to_string(i),
-                                                                                             SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
-                                                                                             utils::getActualTypeStr(
-                                                                                                     ast,
-                                                                                                     originMethodsAppObjPtr->childrenHoses[i]));
+                            string errorMessage = utils::createArgumentTypeErrorMessage("class.methods",
+                                                                                        "method " + to_string(i),
+                                                                                        SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
+                                                                                        utils::getActualTypeStr(
+                                                                                                ast,
+                                                                                                originMethodsAppObjPtr->childrenHoses[i]));
                             utils::raiseError(ast, originMethodsAppHandle, errorMessage,
                                               TRANSFER_PREFIX_TITLE);
                         }
@@ -218,20 +218,20 @@ namespace Transfer {
                         Handle childAppHandle = originMethodsAppObjPtr->childrenHoses[i];
                         auto childAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(childAppHandle));
                         if (childAppObjPtr->childrenHoses.size() != 2) {
-                            string errorMessage = utils::createWrongArgumentsNumberErrorMessage("class.methods", 2,
-                                                                                                childAppObjPtr->childrenHoses.size());
+                            string errorMessage = utils::createArgumentsNumberErrorMessage("class.methods", 2,
+                                                                                           childAppObjPtr->childrenHoses.size());
                             utils::raiseError(ast, childAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                         }
 
                         // first child is variable
                         if (!utils::assertType(childAppObjPtr->childrenHoses[0], Type::VARIABLE)) {
-                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.methods",
-                                                                                             "method " + to_string(i) +
-                                                                                             "'s first argument",
-                                                                                             TypeStrMap[Type::VARIABLE],
-                                                                                             utils::getActualTypeStr(
-                                                                                                     ast,
-                                                                                                     childAppObjPtr->childrenHoses[0]));
+                            string errorMessage = utils::createArgumentTypeErrorMessage("class.methods",
+                                                                                        "method " + to_string(i) +
+                                                                                        "'s first argument",
+                                                                                        TypeStrMap[Type::VARIABLE],
+                                                                                        utils::getActualTypeStr(
+                                                                                                ast,
+                                                                                                childAppObjPtr->childrenHoses[0]));
                             utils::raiseError(ast, childAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                         }
 
@@ -254,6 +254,7 @@ namespace Transfer {
                     auto letAppHandle = ast.makeApplication(TRANSFER_PREFIX, newLambdaHandle);
                     auto letAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(letAppHandle));
                     newLambdaObjPtr->addBody(letAppHandle);
+                    letAppObjPtr->addChild("let");
 
                     auto bindingContainerAppHandle = ast.makeApplication(TRANSFER_PREFIX, letAppHandle);
                     auto bindingContainerAppObjPtr = static_pointer_cast<ApplicationObject>(
@@ -272,12 +273,12 @@ namespace Transfer {
                     if (typeOfStr(originSuperAppObjPtr->childrenHoses[1]) == Type::HANDLE) {
                         if (!utils::assertType(ast, originSuperAppObjPtr->childrenHoses[1],
                                                SchemeObjectType::APPLICATION)) {
-                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.super",
-                                                                                             "second argument",
-                                                                                             SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
-                                                                                             utils::getActualTypeStr(
-                                                                                                     ast,
-                                                                                                     originSuperAppObjPtr->childrenHoses[1]));
+                            string errorMessage = utils::createArgumentTypeErrorMessage("class.super",
+                                                                                        "second argument",
+                                                                                        SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
+                                                                                        utils::getActualTypeStr(
+                                                                                                ast,
+                                                                                                originSuperAppObjPtr->childrenHoses[1]));
                             utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                         } else {
                             auto binding0InitAppHandle = ast.makeApplication(TRANSFER_PREFIX, binding0AppHandle);
@@ -300,12 +301,12 @@ namespace Transfer {
                         // for the second case
                         if (!utils::assertType(originSuperAppObjPtr->childrenHoses[1],
                                                Type::VARIABLE)) {
-                            string errorMessage = utils::createWrongArgumentTypeErrorMessage("class.super",
-                                                                                             "second argument",
-                                                                                             TypeStrMap[Type::VARIABLE],
-                                                                                             utils::getActualTypeStr(
-                                                                                                     ast,
-                                                                                                     originSuperAppObjPtr->childrenHoses[1]));
+                            string errorMessage = utils::createArgumentTypeErrorMessage("class.super",
+                                                                                        "second argument",
+                                                                                        TypeStrMap[Type::VARIABLE],
+                                                                                        utils::getActualTypeStr(
+                                                                                                ast,
+                                                                                                originSuperAppObjPtr->childrenHoses[1]));
                             utils::raiseError(ast, originSuperAppHandle, errorMessage, TRANSFER_PREFIX_TITLE);
                         } else {
                             binding0AppObjPtr->addChild(originSuperAppObjPtr->childrenHoses[1]);
@@ -351,7 +352,25 @@ namespace Transfer {
                         condBranchAppObjPtr->addChild(methodAppObjPtr->childrenHoses[1]);
                     }
 
-                    int i = 1;
+                    // delete handle
+                    // argument
+                    ast.deleteHandle(originArgumentAppHandle);
+
+                    // super
+                    ast.deleteHandle(originSuperAppObjPtr->childrenHoses[1]);
+                    ast.deleteHandle(originSuperAppHandle);
+
+                    // methods
+                    for (auto hos : originMethodsAppObjPtr->childrenHoses) {
+                        ast.deleteHandle(hos);
+                    }
+                    ast.deleteHandle(originMethodsAppHandle);
+
+                    applicationObjPtr->childrenHoses.pop_back();
+                    applicationObjPtr->childrenHoses.pop_back();
+                    applicationObjPtr->childrenHoses.pop_back();
+
+                    applicationObjPtr->addChild(newLambdaHandle);
                 }
             }
         }
