@@ -9,7 +9,7 @@ set(Boost_LIBRARY_DIR /usr/local/Cellar/boost/1.72.0/lib)
 include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIR})
 
-add_executable(main main.cpp lib/Parser.hpp lib/Heap.hpp lib/Analyser.hpp lib/Compiler.hpp)
+add_executable(main main.cpp src/Parser.hpp src/Heap.hpp src/Analyser.hpp src/Compiler.hpp)
 target_link_libraries( main ${Boost_LIBRARIES} )
 
 add_executable(iris main.cpp)

@@ -168,6 +168,10 @@ public:
     void ailPushlist();
 
     void ailPushlist(Handle listHandle);
+
+    void ailCons();
+
+    void ailExit();
 };
 
 
@@ -255,6 +259,7 @@ void Runtime::execute() {
         else if (mnemonic == "car") { this->ailCar(); }
         else if (mnemonic == "cdr") { this->ailCdr(); }
         else if (mnemonic == "list") { this->ailList(); }
+        else if (mnemonic == "cons") { this->ailCons(); }
 
         else if (mnemonic == "add") { this->ailAdd(); }
         else if (mnemonic == "sub") { this->ailSub(); }
@@ -287,6 +292,7 @@ void Runtime::execute() {
         else if (mnemonic == "pause") { this->ailPause(); }
         else if (mnemonic == "halt") { this->ailHalt(); }
         else if (mnemonic == "begin") { this->ailBegin(); }
+        else if (mnemonic == "exit") { this->ailExit(); }
 
         else if (mnemonic == "set-child!") { this->ailSetchild(); }
         else if (mnemonic == "concat") { this->ailConcat(); }
@@ -580,6 +586,14 @@ void Runtime::ailReturn() {
 
 
 void Runtime::ailHalt() {
+    this->currentProcessPtr->state = ProcessState::STOPPED;
+}
+
+void Runtime::ailExit(){
+    auto hoses = this->popOperands(1);
+    this->checkWrongArgumentsNumberError("set", 1, hoses.size());
+
+    this->output(hoses[0], true);
     this->currentProcessPtr->state = ProcessState::STOPPED;
 }
 
@@ -1133,6 +1147,13 @@ void Runtime::ailList() {
         listObjPtr->addChild(hos);
     }
     this->currentProcessPtr->pushOperand(handle);
+    this->currentProcessPtr->step();
+}
+
+void Runtime::ailCons() {
+    auto hoses = this->popOperands(2);
+    this->checkWrongArgumentsNumberError("iftrue", 2, hoses.size());
+
     this->currentProcessPtr->step();
 }
 

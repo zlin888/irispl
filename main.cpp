@@ -1,9 +1,9 @@
 #include <iostream>
-#include "lib/Runtime.hpp"
-#include "lib/Process.hpp"
-#include "lib/ModuleLoader.hpp"
+#include "src/Runtime.hpp"
+#include "src/Process.hpp"
+#include "src/ModuleLoader.hpp"
 #include <cstdlib>
-#include "lib/REPL.hpp"
+#include "src/REPL.hpp"
 
 using namespace std;
 

@@ -14,9 +14,14 @@
   (super object)
   ((fetch (lambda (self) name))))
 
+(define cons 
+  (lambda (l1 l2)
+    (cond ((ispa)))
+
 (define apple (fruit "apple"))
 
 ; (display (apply + (list 1 2)))
 (display (list (list 1 2) 12))
 ; (display (list 1 2))
+(cons (list 1 2) (list 3 4))
 ; 
