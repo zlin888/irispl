@@ -6,11 +6,11 @@ Yet another lisp-language. Typed-scheme in C++ VM
 ✅ Number \
 ✅ Quote \
 ✅ Function (Of course) \
-✅ Class & Instance - Inheritance \
+✅ Class & Instance - Inheritance
 
 ❎ C++ Interface \
 ❎ Garbage Collection \
-❎ Package Manager \
+❎ Package Manager
 
 
 # User Manual
