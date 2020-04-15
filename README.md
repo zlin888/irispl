@@ -1,7 +1,27 @@
 # typed-scheme
 Yet another lisp-language. Typed-scheme in C++ VM
 
+✅ List \
+✅ String \
+✅ Number \
+✅ Quote \
+✅ Function (Of course) \
+✅ Class & Instance - Inheritance
+
+❎ C++ Interface \
+❎ Garbage Collection \
+❎ Package Manager
+
+
 # User Manual
+
+## Class
+```
+(class class-name (init-variable0 init-variable1 ...)
+  (super (father-class-name value)
+    ((method-name0 (self variable0) method-body0)
+     (method-name1 (self variable0) method-body1))))
+```
 
 ## Let
 lexical binding: variable will be defined and has init as default value. the scope of these varibles is inside the let 
