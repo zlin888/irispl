@@ -347,7 +347,7 @@ void Runtime::ailStore() {
 
         this->pushendMode = false;
         this->currentProcessPtr->currentClosurePtr->setBoundVariable(variableName, handle, false);
-    } else {
+    } else
         auto hoses = this->popOperands(1);
         string variableValue = hoses[0];
         this->currentProcessPtr->currentClosurePtr->setBoundVariable(variableName, variableValue, false);

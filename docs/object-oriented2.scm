@@ -6,7 +6,7 @@
             (cond ((eq? selector 'fetch) (lambda () value))
                   ((eq? selector 'store!) (lambda (new-value) (set! value new-value)))
                   ((eq? selector 'cell?) #t)
-                  (else #f)))))
+                  (else error)))))
 
 
 (define positive-filter (lambda (value) (>= value 0)))
@@ -43,5 +43,13 @@
 
 (display ((aa-cell 'fetch)))
 (display ((a-cell 'fetch)))
+((a-cell 'store!) 13)
+((aa-cell 'store!) 13)
+(display ((a-cell 'fetch)))
+; (display (a-cell 'store!))
+; (display (a-cell 'store!))
+; ((a-cell 'store!) 13)
+; (display (a-cell 'fetch))
+; (display (aa-cell 'fetch))
 ; (=> a-cell 'store 1 2 3 4 5 6 7 8 9)
 ; (isinstance? a-cell) => true
