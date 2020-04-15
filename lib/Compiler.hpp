@@ -226,7 +226,9 @@ void Compiler::compileApplication(Handle handle) {
         // handle parameters
         for (int i = childrenHoses.size() - 1; i >= 1; i--) {
             this->compileHos(childrenHoses[i]);
+            // handle parameters
         }
+        this->addInstruction("pushend " + uniqueStr);
 
 
         // 1. Make sure the first child is valid: native, variable, primitive, lambda
@@ -581,7 +583,10 @@ void Compiler::compileApply(Handle handle) {
 
     this->checkWrongArgumentsNumberError("Apply", 3, childrenHoses.size(), handle);
 
+    string uniqueStr = this->makeUniqueString();
+    this->addInstruction("pushend " + uniqueStr);
     this->compileHos(childrenHoses[2]);
+    this->addInstruction("pushend " + uniqueStr);
     this->addInstruction("pushlist");
     // TODO: apply a complex application
 //    this->addInstruction("call " + handle);

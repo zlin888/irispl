@@ -26,5 +26,10 @@
           (lambda (z) (+ x (+ y z))))))
 
 (display (apply _sum x))
+(display (apply + x))
+(display (apply sum (list 99 98 97)))
 (display (apply sum (list 99 98 97)))
 (display (((complex-application 12) 13) 14))
+
+(display (apply + x))
+(display (apply + x))

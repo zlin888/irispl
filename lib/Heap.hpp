@@ -106,13 +106,13 @@ Handle Heap::makeQuote(const string &prefix, Handle parentHandle) {
 }
 
 Handle Heap::makeUnquote(const string &prefix, Handle parentHandle) {
-    string handle = this->allocateHandle(prefix, SchemeObjectType::QUOTE);
+    string handle = this->allocateHandle(prefix, SchemeObjectType::UNQUOTE);
     this->set(handle, std::shared_ptr<UnquoteObject>(new UnquoteObject(parentHandle, handle)));
     return handle;
 }
 
 Handle Heap::makeQuasiquote(const string &prefix, Handle parentHandle) {
-    string handle = this->allocateHandle(prefix, SchemeObjectType::QUOTE);
+    string handle = this->allocateHandle(prefix, SchemeObjectType::QUASIQUOTE);
     this->set(handle, std::shared_ptr<QuasiquoteObject>(new QuasiquoteObject(parentHandle, handle)));
     return handle;
 }
