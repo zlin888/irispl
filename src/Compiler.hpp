@@ -554,7 +554,7 @@ void Compiler::compileOr(Handle handle) {
         HandleOrStr child = childrenHoses[i];
         this->compileHos(child);
 
-        this->addInstruction("iftrue" + trueLabel);
+        this->addInstruction("iftrue " + trueLabel);
     }
 
     // False

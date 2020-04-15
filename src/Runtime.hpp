@@ -215,12 +215,10 @@ void Runtime::schedule() {
         this->currentProcessPtr->state = ProcessState::RUNNING;
         for (int timeSlice = 0; timeSlice < 20; ++timeSlice) {
             this->execute();
-            switch (this->currentProcessPtr->state) {
-                case ProcessState::RUNNING:
-                    continue;
-                default:
-                    break;
+            if (this->currentProcessPtr->state == ProcessState::RUNNING) {
+                continue;
             }
+            break;
         }
 
         // put the unfinished process to the back of the queue
@@ -591,9 +589,9 @@ void Runtime::ailHalt() {
 
 void Runtime::ailExit(){
     auto hoses = this->popOperands(1);
-    this->checkWrongArgumentsNumberError("set", 1, hoses.size());
+    this->checkWrongArgumentsNumberError("exit", 1, hoses.size());
 
-    this->output(hoses[0], true);
+    this->output(this->toStr(hoses[0]), true);
     this->currentProcessPtr->state = ProcessState::STOPPED;
 }
 
@@ -1283,7 +1281,7 @@ void Runtime::checkWrongArgumentsNumberError(string functionName, int expectedNu
                 ", " +
                 to_string(actualNum) + be + "given" << endl;
         cout << this->ERROR_POSTFIX << endl;
-        throw std::runtime_error("");
+
     }
 }
 

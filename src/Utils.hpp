@@ -13,6 +13,9 @@
 #include <boost/algorithm/string.hpp>
 #include "SchemeObject.hpp"
 #include "AST.hpp"
+#include <cstdlib>
+#include <vector>
+#include <map>
 
 using namespace std;
 
@@ -185,7 +188,35 @@ namespace utils {
         return false;
     }
 
+    string getIRISPATH(){
+        string stdLibPath = getenv("IRISPATH");
+        return stdLibPath;
+    }
 
+    string getIRISLIBPath(){
+        string stdLibPath = getenv("IRISLIB");
+        return stdLibPath;
+    }
+
+
+    inline bool exists(const std::string& name) {
+        ifstream f(name.c_str());
+        return f.good();
+    }
+
+    string getStdLibPath(string moduleName) {
+        string irisLibPath = utils::getIRISLIBPath();
+        vector<string> fields;
+        boost::split(fields, irisLibPath, boost::is_any_of(":"));
+        for (auto field : fields) {
+            string path;
+            path = moduleName.ends_with(".scm") ? field + "/" + moduleName : field + "/" + moduleName + ".scm";
+            if (utils::exists(path)) {
+                return path;
+            }
+        }
+        throw runtime_error("moduleName not found");
+    }
 }
 
 #endif //TYPED_SCHEME_UTILS_HPP

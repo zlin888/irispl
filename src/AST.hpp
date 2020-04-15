@@ -63,6 +63,8 @@ public:
     void deleteHandleRecursivly(HandleOrStr hos);
 
     void deleteHandle(HandleOrStr hos);
+
+    Handle makeString(string prefix, Handle parentHandle);
 };
 
 Handle AST::makeLambda(string prefix, Handle parentHandle) {
@@ -85,6 +87,13 @@ Handle AST::makeQuote(string prefix, Handle parentHandle) {
     this->setHandleSourceIndexMapping(quoteHandle, this->sourceCodeMapper.getIndex(parentHandle));
 
     return quoteHandle;
+}
+
+Handle AST::makeString(string prefix, Handle parentHandle) {
+    Handle stringHandle = this->heap.makeString(prefix, parentHandle);
+    this->setHandleSourceIndexMapping(stringHandle, this->sourceCodeMapper.getIndex(parentHandle));
+
+    return stringHandle;
 }
 
 void AST::deleteHandleRecursivly(HandleOrStr hos) {

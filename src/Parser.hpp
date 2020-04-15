@@ -14,9 +14,12 @@
 #include <boost/algorithm/string.hpp>
 #include "SourceCodeMapper.hpp"
 #include "AST.hpp"
+#include "Utils.hpp"
 
 using namespace std;
 
+string PARSER_PREFIX = "_!!!parser_prefix!!!_";
+string PARSER_PREFIX_TITLE = "Parser Error";
 
 class Parser {
 public:
@@ -434,6 +437,15 @@ void Parser::preProcessAnalysis() {
         if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
             auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
             if (!applicationObjPtr->childrenHoses.empty() and applicationObjPtr->childrenHoses[0] == "import") {
+
+                if (applicationObjPtr->childrenHoses.size() == 2) {
+                    string stdLibPath = utils::getStdLibPath(applicationObjPtr->childrenHoses[1]);
+                    Handle stringHandle = ast.makeString(stdLibPath, handle);
+                    auto stringObjPtr = static_pointer_cast<StringObject>(ast.get(stringHandle));
+                    stringObjPtr->content = '"' + stdLibPath + '"';
+                    applicationObjPtr->addChild(stringHandle);
+                }
+
                 // make sure import has more three parameters
                 if (applicationObjPtr->childrenHoses.size() != 3) {
                     throw runtime_error(

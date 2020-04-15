@@ -284,6 +284,7 @@ string Module::getFormattedCode(string path) {
     try {
         code = utils::readFileToOneString(path);
     } catch (exception &e) {
+        cout << "[ERROR] module " + path + "not found" << endl;
         throw "[ERROR] module " + path + "not found";
     }
 
