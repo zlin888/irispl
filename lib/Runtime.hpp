@@ -14,6 +14,7 @@
 using namespace std;
 
 string RUNTIME_PREFIX = "_!!!runtime_prefix!!!_";
+string RUNTIME_PREFIX_TITLE = "Runtime Error";
 string PUSHEND = "_!!!pushend!!!_";
 
 enum class OutputMode {

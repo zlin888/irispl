@@ -7,7 +7,6 @@
 
 #include <map>
 #include <string>
-#include "Parser.hpp"
 
 
 // merge source and handlesourcemap, we can use moduleName as key

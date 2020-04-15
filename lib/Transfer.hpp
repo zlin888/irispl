@@ -321,6 +321,7 @@ namespace Transfer {
 
                     auto condAppHandle = ast.makeApplication(TRANSFER_PREFIX, letBodyLambdaHandle);
                     auto condAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(condAppHandle));
+                    condAppObjPtr->addChild("cond");
 
                     letBodyLambdaObjPtr->addBody(condAppHandle);
 
@@ -354,6 +355,19 @@ namespace Transfer {
                             schemeObjPtr->parentHandle = condBranchAppHandle;
                         }
                     }
+
+                    // cond else
+                    auto condElseBranchAppHandle = ast.makeApplication(TRANSFER_PREFIX, condAppHandle);
+                    auto condElseAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(condElseBranchAppHandle));
+                    condAppObjPtr->addChild(condElseBranchAppHandle);
+                    condElseAppObjPtr->addChild("else");
+
+                    auto condElseBranchBodyAppHandle = ast.makeApplication(TRANSFER_PREFIX, condElseBranchAppHandle);
+                    auto condElseBranchBodyAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(condElseBranchBodyAppHandle));
+                    condElseAppObjPtr->addChild(condElseBranchBodyAppHandle);
+
+                    condElseBranchBodyAppObjPtr->addChild("super");
+                    condElseBranchBodyAppObjPtr->addChild("_selector");
 
                     // delete handle
                     // argument

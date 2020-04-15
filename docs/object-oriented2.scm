@@ -39,6 +39,9 @@
       (apply _method args))))
 
 (define a-cell (filter-cell 17 positive-filter))
+(define aa-cell (make-filtered-cell 17 positive-filter))
 
-(=> a-cell 'store 1 2 3 4 5 6 7 8 9)
+(display ((aa-cell 'fetch)))
+(display ((a-cell 'fetch)))
+; (=> a-cell 'store 1 2 3 4 5 6 7 8 9)
 ; (isinstance? a-cell) => true

@@ -5,7 +5,8 @@
 #ifndef IRIS_AST_HPP
 #define IRIS_AST_HPP
 
-#include "Utils.hpp"
+#include "Heap.hpp"
+#include "SourceCodeMapper.hpp"
 
 class AST {
 public:
