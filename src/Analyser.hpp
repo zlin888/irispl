@@ -73,6 +73,9 @@ public:
     static AST analyse(AST ast);
 
     void tailCallAnalyse();
+
+    static void emptyApplicationDetection(AST &ast);
+
 };
 
 // from this handle, find the lambda that has bounded this variable
@@ -273,8 +276,23 @@ void Analyser::tailCallAnalyse() {
 
 }
 
+ void Analyser::emptyApplicationDetection(AST &ast) {
+    for (auto handle : ast.getHandles()) {
+        shared_ptr<SchemeObject> schemeObjPtr;
+        schemeObjPtr = ast.get(handle);
+
+        if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+            auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
+            if (applicationObjPtr->childrenHoses.empty()) {
+                string errorMessage = utils::createEmptyApplicationMessage();
+                utils::raiseError(ast, handle, errorMessage, ANALYZER_PREFIX_TITLE);
+            }
+        }
+    }
+}
 
 AST Analyser::analyse(AST ast) {
+    Analyser::emptyApplicationDetection(ast);
     Transfer::transfer(ast);
     Analyser analyser(ast);
     analyser.scopeAnalyse();

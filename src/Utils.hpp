@@ -154,6 +154,12 @@ namespace utils {
         return message;
     }
 
+    string createEmptyApplicationMessage() {
+        string message =
+                "[EmptyApplicationError] application can not be empty";
+        return message;
+    }
+
     void raiseError(AST &ast, Handle handle, string message, string prefixTitle) {
         string prefix = utils::generatePrefix(prefixTitle);
         string postfix = utils::generatePostfix(prefix.size());

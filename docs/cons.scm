@@ -23,3 +23,8 @@
 
 (display-list (list 3 4 5 6))
 (begin (display 1) (display 2))
+(utils.show error.cons-error)
+
+; (display (begin (display 12) 123))
+; (display (begin (display 12) (display 18) 99 1299))
+(display (let ((_ (display 12)) (x 13)) (+ x 1)))
