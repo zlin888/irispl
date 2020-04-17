@@ -263,6 +263,8 @@ void Analyser::scopeAnalyse() {
                 string originName = this->ast.varUniqueOriginNameMap[uniqueName];
 
                 if (this->ast.definedVarOriginUniqueNameMap.count(originName)) {
+                    string errorMessage = utils::createRepeatedDefinitionMessage(originName);
+                    utils::raiseError(ast, schemeObjPtr->selfHandle, errorMessage, ANALYZER_PREFIX_TITLE);
                     throw std::runtime_error("[scope analysis] define variable " + originName + " repeatedly");
                 } else {
                     this->ast.definedVarOriginUniqueNameMap[originName] = uniqueName;

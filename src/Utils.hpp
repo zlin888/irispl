@@ -160,6 +160,11 @@ namespace utils {
         return message;
     }
 
+    string createRepeatedDefinitionMessage(string variableName) {
+        string message = "[RepeatedDefinitionError] variable " + variableName + " is defined repeatedly";
+        return message;
+    }
+
     void raiseError(AST &ast, Handle handle, string message, string prefixTitle) {
         string prefix = utils::generatePrefix(prefixTitle);
         string postfix = utils::generatePostfix(prefix.size());

@@ -1149,9 +1149,23 @@ void Runtime::ailList() {
 }
 
 void Runtime::ailCons() {
-    auto hoses = this->popOperands(2);
-    this->checkWrongArgumentsNumberError("iftrue", 2, hoses.size());
+    auto hoses = this->popOperandsToPushend();
+    Handle handle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
+    shared_ptr<ListObject> consListObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(handle));
 
+    for (auto hos :hoses) {
+        auto schemeObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
+        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
+            auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
+            for(int i = listObjPtr->currentIndex; i < listObjPtr->realListObjPtr->childrenHoses.size(); i++) {
+                consListObjPtr->addChild(listObjPtr->childrenHoses[i]);
+            }
+        } else {
+            consListObjPtr->addChild(hos);
+        }
+    }
+
+    this->currentProcessPtr->pushOperand(handle);
     this->currentProcessPtr->step();
 }
 
