@@ -172,6 +172,12 @@ public:
     void ailCons();
 
     void ailExit();
+
+    void assertArgumentNumber(string functionName, int expectedNum, int actualNum);
+
+    string makeUniqueString();
+
+    int uniqueStrCounter = 0;
 };
 
 
@@ -449,15 +455,18 @@ void Runtime::ailPushend() {
 
 void Runtime::ailPushlist() {
 
-    auto hoses = this->popOperands(1);
+    auto hoses = this->popOperandsToPushend();
     // TODO: raise a type error here
     auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hoses[0]));
 
     int i = listObjPtr->currentIndex;
+    string uniqueStr = this->makeUniqueString();
+    this->currentProcessPtr->pushOperand(PUSHEND + "." + uniqueStr);
     while (i != listObjPtr->realListObjPtr->size()) {
         this->currentProcessPtr->pushOperand(listObjPtr->realListObjPtr->childrenHoses[i]);
         i++;
     }
+    this->currentProcessPtr->pushOperand(PUSHEND + "." + uniqueStr);
 
     this->currentProcessPtr->step();
 }
@@ -587,11 +596,12 @@ void Runtime::ailHalt() {
     this->currentProcessPtr->state = ProcessState::STOPPED;
 }
 
-void Runtime::ailExit(){
-    auto hoses = this->popOperands(1);
-    this->checkWrongArgumentsNumberError("exit", 1, hoses.size());
+void Runtime::ailExit() {
+    auto hoses = this->popOperandsToPushend();
+    this->assertArgumentNumber("exit", 1, hoses.size());
 
-    this->output(this->toStr(hoses[0]), true);
+    this->output("exit with: ", true);
+    this->output("  " + this->toStr(hoses[0]), true);
     this->currentProcessPtr->state = ProcessState::STOPPED;
 }
 
@@ -602,10 +612,7 @@ void Runtime::ailExit(){
 
 void Runtime::ailAdd() {
     auto hoses = this->popOperandsToPushend();
-    if (hoses.size() != 2) {
-        string errorMessage = utils::createArgumentsNumberErrorMessage("+", 2, hoses.size());
-        utils::raiseError(errorMessage, RUNTIME_PREFIX_TITLE);
-    }
+    this->assertArgumentNumber("+", 2, hoses.size());
     string operand1 = hoses[0];
     string operand2 = hoses[1];
 
@@ -967,7 +974,8 @@ void Runtime::ailIsnumber() {
 //=================================================================
 
 void Runtime::ailDisplay() {
-    auto hoses = this->popOperands(1);
+    auto hoses = this->popOperandsToPushend();
+    this->assertArgumentNumber("display", 1, hoses.size());
     this->checkWrongArgumentsNumberError("display", 1, hoses.size());
     string argument = hoses[0];
 
@@ -1161,7 +1169,7 @@ void Runtime::ailCons() {
         auto schemeObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
         if (schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
             auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
-            for(int i = listObjPtr->currentIndex; i < listObjPtr->realListObjPtr->childrenHoses.size(); i++) {
+            for (int i = listObjPtr->currentIndex; i < listObjPtr->realListObjPtr->childrenHoses.size(); i++) {
                 consListObjPtr->addChild(listObjPtr->childrenHoses[i]);
             }
         } else {
@@ -1277,17 +1285,25 @@ vector<HandleOrStr> Runtime::popOperandsToPushend() {
 }
 
 bool Runtime::matchPushendStack(string pushendStr) {
-    if (this->pushendStack.empty() || this->pushendStack.back() != pushendStr) {
-        this->pushendStack.push_back(pushendStr);
+    if (this->currentProcessPtr->pushendSet.count(pushendStr)) {
+        this->currentProcessPtr->pushendSet.insert(pushendStr);
         return false;
     } else {
-        this->pushendStack.pop_back();
+        this->currentProcessPtr->pushendSet.erase(pushendStr);
         return true;
     }
 }
 
 void Runtime::ailBegin() {
     this->currentProcessPtr->step();
+}
+
+void Runtime::assertArgumentNumber(string functionName, int expectedNum, int actualNum) {
+    if (expectedNum != actualNum) {
+        string errorMessage = utils::createArgumentsNumberErrorMessage(functionName, expectedNum, actualNum);
+        utils::raiseError(errorMessage, RUNTIME_PREFIX_TITLE);
+    }
+
 }
 
 void Runtime::checkWrongArgumentsNumberError(string functionName, int expectedNum, int actualNum) {
@@ -1300,6 +1316,13 @@ void Runtime::checkWrongArgumentsNumberError(string functionName, int expectedNu
                 to_string(actualNum) + be + "given" << endl;
         cout << this->ERROR_POSTFIX << endl;
     }
+}
+
+
+string Runtime::makeUniqueString() {
+    string uniqueStr = "RUNTIME.UniqueStrID" + to_string(this->uniqueStrCounter);
+    this->uniqueStrCounter++;
+    return uniqueStr;
 }
 
 #endif // !RUNTIME_HPP

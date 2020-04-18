@@ -44,6 +44,7 @@ public:
     PID pid = 0;
     int PC = 0;
     std::shared_ptr<Closure> currentClosurePtr;
+    set<string> pushendSet;
 
     Process(PID newPid, const Module &module);
 
