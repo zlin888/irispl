@@ -453,10 +453,8 @@ void Runtime::ailPushlist() {
     // TODO: raise a type error here
     auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hoses[0]));
 
-    int i = listObjPtr->currentIndex;
-    while (i != listObjPtr->realListObjPtr->size()) {
+    for (int i = listObjPtr->realListObjPtr->size() - 1; i >= listObjPtr->currentIndex; i--) {
         this->currentProcessPtr->pushOperand(listObjPtr->realListObjPtr->childrenHoses[i]);
-        i++;
     }
 
     this->currentProcessPtr->step();
@@ -601,7 +599,7 @@ void Runtime::ailExit(){
 //=================================================================
 
 void Runtime::ailAdd() {
-    auto hoses = this->popOperandsToPushend();
+    auto hoses = this->popOperands(2);
     if (hoses.size() != 2) {
         string errorMessage = utils::createArgumentsNumberErrorMessage("+", 2, hoses.size());
         utils::raiseError(errorMessage, RUNTIME_PREFIX_TITLE);
@@ -1189,7 +1187,7 @@ void Runtime::ailIfTrue() {
 
     if (argumentType == Type::LABEL) {
         string label = argument;
-
+//
         if (predicate == "#t") {
             int targetAddress = this->currentProcessPtr->labelAddressMap[label];
             this->currentProcessPtr->gotoAddress(targetAddress);
