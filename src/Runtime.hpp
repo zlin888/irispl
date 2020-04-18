@@ -601,8 +601,11 @@ void Runtime::ailExit(){
 //=================================================================
 
 void Runtime::ailAdd() {
-    auto hoses = this->popOperands(2);
-    this->checkWrongArgumentsNumberError("add", 2, hoses.size());
+    auto hoses = this->popOperandsToPushend();
+    if (hoses.size() != 2) {
+        string errorMessage = utils::createArgumentsNumberErrorMessage("+", 2, hoses.size());
+        utils::raiseError(errorMessage, RUNTIME_PREFIX_TITLE);
+    }
     string operand1 = hoses[0];
     string operand2 = hoses[1];
 
@@ -1144,6 +1147,7 @@ void Runtime::ailList() {
     for (auto hos : hoses) {
         listObjPtr->addChild(hos);
     }
+
     this->currentProcessPtr->pushOperand(handle);
     this->currentProcessPtr->step();
 }
@@ -1295,7 +1299,6 @@ void Runtime::checkWrongArgumentsNumberError(string functionName, int expectedNu
                 ", " +
                 to_string(actualNum) + be + "given" << endl;
         cout << this->ERROR_POSTFIX << endl;
-
     }
 }
 

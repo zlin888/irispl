@@ -711,7 +711,7 @@ string Compiler::createErrorMessage(string message, Handle handle) {
     cout << this->ERROR_PREFIX << endl;
     utils::coutContext(this->ast, handle, message);
     cout << this->ERROR_POSTFIX<< endl;
-};
+}
 
 void Compiler::checkWrongArgumentsNumberError(string functionName, int expectedNum, int actualNum, Handle handle) {
     if (expectedNum != actualNum) {

@@ -50,4 +50,4 @@
 (display (+ 33 99))
 (define add (lambda (x y z) (+ x y)))
 (add 55 66 77)
-(display (+ 1))
+(display (+ 1 12))

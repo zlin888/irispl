@@ -175,6 +175,16 @@ namespace utils {
         throw std::runtime_error("");
     }
 
+    void raiseError(string message, string prefixTitle) {
+        string prefix = utils::generatePrefix(prefixTitle);
+        string postfix = utils::generatePostfix(prefix.size());
+        cout << prefix << endl;
+        cout << "Description: " + message << endl;
+        cout << postfix;
+        throw std::runtime_error("");
+
+    }
+
     string getActualTypeStr(AST &ast, HandleOrStr hos) {
 
         // if its a handle, return the schemeObjType

@@ -40,6 +40,7 @@ public:
     map<string, int> labelAddressMap;
     ProcessState state = ProcessState::READY;
     Heap heap;
+    AST ast;
     PID pid = 0;
     int PC = 0;
     std::shared_ptr<Closure> currentClosurePtr;
@@ -116,6 +117,7 @@ Process::Process(PID newPid, const Module &module) {
     // > at the top of everything
     this->currentClosurePtr = std::shared_ptr<Closure>(new Closure(-1, nullptr, TOP_NODE_HANDLE));
     this->heap = module.ast.heap;
+    this->ast = module.ast;
     this->heap.set(TOP_NODE_HANDLE, this->currentClosurePtr);
 
     this->initLabelLineMap();
