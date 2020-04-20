@@ -313,7 +313,7 @@ set<string> KEYWORDS = {
         "quote", "quasiquote", "unquote",
         "let", "apply",
         "class", "isinstance?",
-        "exit",
+        "exit", "type",
 };
 
 Type typeOfStr(const string &inputStr) {

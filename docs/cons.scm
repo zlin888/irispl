@@ -33,7 +33,7 @@
 
 (class food (name)
   (super object.object)
-  ((fetch (lambda (self) name))))
+  ((fetch (lambda (self) name)))) ;adsf
 
 (class apple (value)
   (super (food "apple"))
@@ -46,3 +46,46 @@
 ((my-apple 'store) my-apple 400)
 (display (object.=> my-apple 'fetch-value))
 (display (object.=> my-apple 'fetch))
+
+(display (begin (* x 2) (define x 12)))
+(display (let ((x 12) (y 17)) (begin (+ x y) (* x y))))
+(display (quasiquote (quote 12)))
+(display (quote list 1 2 3))
+
+(define funcc
+  (lambda (z)
+    (lambda (x y)
+    (if (and (eq? x (car z)) (eq? y (car (cdr z))))
+        (+ x y)
+        'error))))
+
+(define func
+    (funcc (list 1 2)))
+
+(display (cond ((> 2 9) #f) ((> 2 8) #t) (else 'jack)))
+(display (type 12))
+(display (type "jack"))
+
+(define list-size-drive
+  (lambda (l n)
+    (if (pair? l)
+        (list-size-drive (cdr l) (+ n 1))
+        (+ n 1))))
+
+(define list-size
+  (lambda (l)
+    (list-size-drive l 0)))
+
+(define type-lambda
+  (lambda (_type . args)
+    (if (not (eq? (list-size _type) (+ 1 (list-size args))))
+      (list-size _type)
+      'good)))
+
+(display (type-lambda (list 'NUMBER 'NUMBER 'NUMBER) 1 "STRINGXX"))
+
+(define shit
+  (lambda (_type . args)
+    (display _type)))
+
+(shit (list 129 'NUMBER 'NUMBER))

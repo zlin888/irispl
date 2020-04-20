@@ -172,6 +172,10 @@ public:
     void ailCons();
 
     void ailExit();
+
+    void ailType();
+
+    string toType(HandleOrStr hos);
 };
 
 
@@ -245,6 +249,7 @@ void Runtime::execute() {
         else if (mnemonic == "pushlist") { this->ailPushlist(); }
         else if (mnemonic == "pop") { this->ailPop(); }
         else if (mnemonic == "set") { this->ailSet(); }
+        else if (mnemonic == "type") { this->ailType(); }
 
 
         else if (mnemonic == "call") { this->ailCall(instruction); }
@@ -585,7 +590,7 @@ void Runtime::ailHalt() {
     this->currentProcessPtr->state = ProcessState::STOPPED;
 }
 
-void Runtime::ailExit(){
+void Runtime::ailExit() {
     auto hoses = this->popOperands(1);
     this->checkWrongArgumentsNumberError("exit", 1, hoses.size());
 
@@ -610,7 +615,14 @@ void Runtime::ailAdd() {
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
         // TODO: NUMBER is not enough, we need better integer system here
-        this->currentProcessPtr->pushOperand(to_string(stod(operand1) + stod(operand2)));
+        double result = stod(operand1) + stod(operand2);
+        string resultStr;
+        if (utils::double_is_int(result)) {
+            resultStr = to_string((int) result);
+        } else {
+            resultStr = to_string(result);
+        }
+        this->currentProcessPtr->pushOperand(resultStr);
     } else {
         utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
         throw std::invalid_argument("");
@@ -618,6 +630,7 @@ void Runtime::ailAdd() {
 
     this->currentProcessPtr->step();
 }
+
 
 void Runtime::ailSub() {
     auto hoses = this->popOperands(2);
@@ -957,8 +970,34 @@ void Runtime::ailIsnumber() {
 
     this->currentProcessPtr->pushOperand(typeOfStr(operand) == Type::NUMBER ? "#t" : "#f");
     this->currentProcessPtr->step();
-
 }
+
+
+void Runtime::ailType() {
+    auto hoses = this->popOperands(1);
+    string hos = hoses[0];
+
+    Handle quoteHandle = this->currentProcessPtr->heap.makeQuote(RUNTIME_PREFIX, TOP_NODE_HANDLE);
+    auto quoteObjPtr = static_pointer_cast<QuoteObject>(this->currentProcessPtr->heap.get(quoteHandle));
+    quoteObjPtr->addChild("quote");
+    quoteObjPtr->addChild(toType(hos));
+
+    this->currentProcessPtr->pushOperand(quoteHandle);
+
+    this->currentProcessPtr->step();
+}
+
+string Runtime::toType(HandleOrStr hos) {
+    Type hosType = typeOfStr(hos);
+    if (hosType == Type::HANDLE) {
+        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
+        return SchemeObjectTypeStrMap[schemeObjectPtr->schemeObjectType];
+    } else {
+        return TypeStrMap[hosType];
+    }
+}
+
+
 
 //=================================================================
 //                      Other Instructions
@@ -1159,7 +1198,7 @@ void Runtime::ailCons() {
         auto schemeObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
         if (schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
             auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
-            for(int i = listObjPtr->currentIndex; i < listObjPtr->realListObjPtr->childrenHoses.size(); i++) {
+            for (int i = listObjPtr->currentIndex; i < listObjPtr->realListObjPtr->childrenHoses.size(); i++) {
                 consListObjPtr->addChild(listObjPtr->childrenHoses[i]);
             }
         } else {
@@ -1299,5 +1338,6 @@ void Runtime::checkWrongArgumentsNumberError(string functionName, int expectedNu
         cout << this->ERROR_POSTFIX << endl;
     }
 }
+
 
 #endif // !RUNTIME_HPP

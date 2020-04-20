@@ -182,11 +182,9 @@ namespace utils {
         cout << "Description: " + message << endl;
         cout << postfix;
         throw std::runtime_error("");
-
     }
 
     string getActualTypeStr(AST &ast, HandleOrStr hos) {
-
         // if its a handle, return the schemeObjType
         // else return the type is fine
         Type type = typeOfStr(hos);
@@ -219,7 +217,6 @@ namespace utils {
         return stdLibPath;
     }
 
-
     inline bool exists(const std::string& name) {
         ifstream f(name.c_str());
         return f.good();
@@ -237,6 +234,11 @@ namespace utils {
             }
         }
         throw runtime_error("moduleName not found");
+    }
+
+    bool double_is_int(double trouble) {
+        double absolute = abs( trouble );
+        return absolute == floor(absolute);
     }
 }
 
