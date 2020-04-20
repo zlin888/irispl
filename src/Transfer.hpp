@@ -348,7 +348,7 @@ namespace Transfer {
                         auto selectionQuoteObjPtr = static_pointer_cast<QuoteObject>(ast.get(selectionQuoteHandle));
                         condBranchPredicateAppObjPtr->addChild(selectionQuoteHandle);
 
-                        selectionQuoteObjPtr->addChild("quote");
+//                        selectionQuoteObjPtr->addChild("quote");
                         selectionQuoteObjPtr->addChild("'" + methodAppObjPtr->childrenHoses[0]);
                         condBranchAppObjPtr->addChild(methodAppObjPtr->childrenHoses[1]);
                         if (typeOfStr(methodAppObjPtr->childrenHoses[1]) == Type::HANDLE) {

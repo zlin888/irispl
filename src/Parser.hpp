@@ -240,7 +240,7 @@ int Parser::parseQuoteTerm(int index) {
     HandleOrStr childHos = nodeStack.back();
     nodeStack.pop_back();
 
-    static_pointer_cast<QuoteObject>(this->ast.heap.get(sListHandle))->addChild("quote");
+//    static_pointer_cast<QuoteObject>(this->ast.heap.get(sListHandle))->addChild("quote");
     static_pointer_cast<QuoteObject>(this->ast.heap.get(sListHandle))->addChild(childHos);
 
     return nextIndex;

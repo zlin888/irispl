@@ -76,16 +76,26 @@
   (lambda (l)
     (list-size-drive l 0)))
 
-(define type-lambda
-  (lambda (_type . args)
-    (if (not (eq? (list-size _type) (+ 1 (list-size args))))
-      (list-size _type)
-      'good)))
+; (define type-lambda
+;   (lambda (_type . args)
+;     ()))
 
-(display (type-lambda (list 'NUMBER 'NUMBER 'NUMBER) 1 "STRINGXX"))
+(define map
+  (lambda (f l)
+    (if (pair? l)
+      (list (f (car l)) (map f (cdr l)))
+      (f (car l)))))
 
-(define shit
-  (lambda (_type . args)
-    (display _type)))
+(define double
+  (lambda (x) (* x 2)))
 
-(shit (list 129 'NUMBER 'NUMBER))
+(display (cons (list 1 2 3) (list 7 8 9)))
+(display (map double (list 1 2 3)))
+
+; (display (type-lambda (list 'NUMBER 'NUMBER 'NUMBER) 1 2))
+
+; (define shit
+;   (lambda (_type . args)
+;     (display _type)))
+
+; (shit (list 129 'NUMBER 'NUMBER))

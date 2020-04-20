@@ -120,7 +120,13 @@ public:
     HandleOrStr car();
 
     int size();
+
+    vector<HandleOrStr> getChildrenHoses();
 };
+
+vector<HandleOrStr> ListObject::getChildrenHoses() {
+    return vector<HandleOrStr>(this->childrenHoses.begin() + currentIndex, this->childrenHoses.end());
+}
 
 int ListObject::size() {
     if(this->isFake) {
@@ -128,7 +134,6 @@ int ListObject::size() {
     } else {
         return this->childrenHoses.size();
     }
-
 }
 
 HandleOrStr ListObject::car() {
@@ -208,6 +213,9 @@ public:
 };
 
 void QuoteObject::addChild(HandleOrStr childHos) {
+    if (!childHos.starts_with("'")) {
+        childHos = "'" + childHos;
+    }
     this->childrenHoses.push_back(childHos);
 }
 

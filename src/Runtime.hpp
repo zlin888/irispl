@@ -176,6 +176,14 @@ public:
     void ailType();
 
     string toType(HandleOrStr hos);
+
+    string doubleToStr(double trouble);
+
+    void execute(Instruction instruction);
+
+    bool areHosesEqual(vector<HandleOrStr> hoses1, vector<HandleOrStr> hoses2);
+
+    bool isEq(HandleOrStr operand1, HandleOrStr operand2);
 };
 
 
@@ -233,9 +241,7 @@ void Runtime::schedule() {
     }
 }
 
-void Runtime::execute() {
-
-    Instruction instruction = this->currentProcessPtr->currentInstruction();
+void Runtime::execute(Instruction instruction) {
     if (instruction.type != InstructionType::COMMENT && instruction.type != InstructionType::LABEL) {
         string argument = instruction.argument;
         string mnemonic = instruction.mnemonic;
@@ -252,8 +258,6 @@ void Runtime::execute() {
         else if (mnemonic == "type") { this->ailType(); }
 
 
-        else if (mnemonic == "call") { this->ailCall(instruction); }
-        else if (mnemonic == "tailcall") { this->ailTailCall(instruction); }
         else if (mnemonic == "return") { this->ailReturn(); }
         else if (mnemonic == "iftrue") { this->ailIfTrue(); }
         else if (mnemonic == "iffalse") { this->ailIfFalse(); }
@@ -300,6 +304,9 @@ void Runtime::execute() {
         else if (mnemonic == "set-child!") { this->ailSetchild(); }
         else if (mnemonic == "concat") { this->ailConcat(); }
         else if (mnemonic == "duplicate") { this->ailDuplicate(); }
+
+        else if (mnemonic == "call") { this->ailCall(instruction); }
+        else if (mnemonic == "tailcall") { this->ailTailCall(instruction); }
         else {
             this->currentProcessPtr->step();
         }
@@ -310,6 +317,11 @@ void Runtime::execute() {
     if (this->currentProcessPtr->PC >= this->currentProcessPtr->instructions.size()) {
         this->currentProcessPtr->state = ProcessState::STOPPED;
     }
+}
+
+void Runtime::execute() {
+    Instruction instruction = this->currentProcessPtr->currentInstruction();
+    this->execute(instruction);
 }
 
 
@@ -568,6 +580,12 @@ void Runtime::ailCall(const Instruction &instruction, bool isTailCall) {
 
         Instruction newInstruction("call " + variableValue);
         this->ailCall(newInstruction);
+    } else if (instruction.argumentType == InstructionArgumentType::KEYWORD) {
+        Instruction newInstruction(instruction.argument);
+        this->execute(newInstruction);
+//    } else if (typeOfStr(instruction.mnemonic) == InstructionArgumentType::KEYWORD) {
+//        Instruction newInstruction(instruction.mnemonic);
+//        this->ailCall(newInstruction);
     } else {
         throw std::runtime_error("[ERROR] call's argument must be handle, label, or variable : Runtime::ailCall");
     }
@@ -631,6 +649,15 @@ void Runtime::ailAdd() {
     this->currentProcessPtr->step();
 }
 
+string Runtime::doubleToStr(double trouble) {
+    if (utils::double_is_int(trouble)) {
+        return to_string((int) trouble);
+    } else {
+        return to_string(trouble);
+    }
+
+}
+
 
 void Runtime::ailSub() {
     auto hoses = this->popOperands(2);
@@ -674,7 +701,8 @@ void Runtime::ailMul() {
 
     if (Instruction::getArgumentType(operand1) == InstructionArgumentType::NUMBER &&
         Instruction::getArgumentType(operand2) == InstructionArgumentType::NUMBER) {
-        this->currentProcessPtr->pushOperand(to_string(stod(operand1) * stod(operand2)));
+        double result = stod(operand1) * stod(operand2);
+        this->currentProcessPtr->pushOperand(this->doubleToStr(result));
     } else {
         utils::log("need two numbers, but gets " + operand1 + " and " + operand2, __FILE__, __FUNCTION__, __LINE__);
         throw std::invalid_argument("");
@@ -856,13 +884,21 @@ void Runtime::ailIsEq() {
     string operand1 = hoses[0];
     string operand2 = hoses[1];
 
+    if(this->isEq(operand1, operand2)) {
+        this->currentProcessPtr->pushOperand("#t");
+    } else {
+        this->currentProcessPtr->pushOperand("#f");
+    }
+
+    this->currentProcessPtr->step();
+}
+
+bool Runtime::isEq(HandleOrStr operand1, HandleOrStr operand2) {
     Type operand1Type = typeOfStr(operand1);
     Type operand2Type = typeOfStr(operand2);
 
     if (operand1Type != operand2Type) {
-        this->currentProcessPtr->pushOperand("#f");
-        this->currentProcessPtr->step();
-        return;
+        return false;
     }
 
     if (operand1Type == Type::HANDLE) {
@@ -870,47 +906,52 @@ void Runtime::ailIsEq() {
         auto schemeObjPtr2 = this->currentProcessPtr->heap.get(operand2);
 
         if (schemeObjPtr1->schemeObjectType != schemeObjPtr2->schemeObjectType) {
-            this->currentProcessPtr->pushOperand("#f");
-            this->currentProcessPtr->step();
-            return;
+            return false;
         }
 
         if (schemeObjPtr1->schemeObjectType == SchemeObjectType::QUOTE) {
             auto hoses1 = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr1);
             auto hoses2 = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr2);
 
-            if (hoses1.size() != hoses2.size()) {
-                this->currentProcessPtr->pushOperand("#f");
-                this->currentProcessPtr->step();
-                return;
+            if (this->areHosesEqual(hoses1, hoses2)) {
+                return true;
+            } else {
+                return false;
             }
 
-            for (int i = 0; i < hoses1.size(); ++i) {
-                if (hoses1[i] != hoses2[i]) {
-                    this->currentProcessPtr->pushOperand("#f");
-                    this->currentProcessPtr->step();
-                    return;
-                }
+        } else if (schemeObjPtr1->schemeObjectType == SchemeObjectType::LIST) {
+            auto l1ObjPtr = static_pointer_cast<ListObject>(schemeObjPtr1);
+            auto l2ObjPtr = static_pointer_cast<ListObject>(schemeObjPtr2);
+
+            auto hoses1 = l1ObjPtr->getChildrenHoses();
+            auto hoses2 = l2ObjPtr->getChildrenHoses();
+
+            if (this->areHosesEqual(hoses1, hoses2)) {
+                return true;
+            } else {
+                return false;
             }
-
-            this->currentProcessPtr->pushOperand("#t");
-            this->currentProcessPtr->step();
-            return;
-        }
-
-    }
-
-    if (utils::makeSet<Type>(5, Type::BOOLEAN, Type::KEYWORD, Type::NUMBER, Type::STRING, Type::PORT).count(
-            operand1Type)) {
-        if (operand1 == operand2) {
-            this->currentProcessPtr->pushOperand("#t");
-        } else {
-            this->currentProcessPtr->pushOperand("#f");
         }
     }
 
-    this->currentProcessPtr->step();
+    if (operand1 == operand2) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
+bool Runtime::areHosesEqual(vector<HandleOrStr> hoses1, vector<HandleOrStr> hoses2) {
+    if (hoses1.size() != hoses2.size()) {
+        return false;
+    }
+
+    for (int i = 0; i < hoses1.size(); ++i) {
+        if (!this->isEq(hoses1[i], hoses2[i])) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void Runtime::ailIsnull() {
@@ -979,7 +1020,6 @@ void Runtime::ailType() {
 
     Handle quoteHandle = this->currentProcessPtr->heap.makeQuote(RUNTIME_PREFIX, TOP_NODE_HANDLE);
     auto quoteObjPtr = static_pointer_cast<QuoteObject>(this->currentProcessPtr->heap.get(quoteHandle));
-    quoteObjPtr->addChild("quote");
     quoteObjPtr->addChild(toType(hos));
 
     this->currentProcessPtr->pushOperand(quoteHandle);
@@ -1190,16 +1230,21 @@ void Runtime::ailList() {
 }
 
 void Runtime::ailCons() {
-    auto hoses = this->popOperandsToPushend();
+    auto hoses = this->popOperands(2);
     Handle handle = this->currentProcessPtr->heap.makeList(RUNTIME_PREFIX, TOP_NODE_HANDLE);
     shared_ptr<ListObject> consListObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(handle));
 
     for (auto hos :hoses) {
-        auto schemeObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
-            auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
-            for (int i = listObjPtr->currentIndex; i < listObjPtr->realListObjPtr->childrenHoses.size(); i++) {
-                consListObjPtr->addChild(listObjPtr->childrenHoses[i]);
+        Type hosType = typeOfStr(hos);
+        if (hosType == Type::HANDLE) {
+            auto schemeObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
+            if (schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
+                auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
+                for (int i = listObjPtr->currentIndex; i < listObjPtr->realListObjPtr->childrenHoses.size(); i++) {
+                    consListObjPtr->addChild(listObjPtr->childrenHoses[i]);
+                }
+            } else {
+                consListObjPtr->addChild(hos);
             }
         } else {
             consListObjPtr->addChild(hos);
