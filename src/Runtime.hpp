@@ -581,7 +581,13 @@ void Runtime::ailCall(const Instruction &instruction, bool isTailCall) {
         Instruction newInstruction("call " + variableValue);
         this->ailCall(newInstruction);
     } else if (instruction.argumentType == InstructionArgumentType::KEYWORD) {
-        Instruction newInstruction(instruction.argument);
+        string newArgument;
+        if (primitiveInstructionMap.count(instruction.argument)) {
+            newArgument = primitiveInstructionMap[instruction.argument];
+        } else {
+            newArgument = instruction.argument;
+        }
+        Instruction newInstruction(newArgument);
         this->execute(newInstruction);
 //    } else if (typeOfStr(instruction.mnemonic) == InstructionArgumentType::KEYWORD) {
 //        Instruction newInstruction(instruction.mnemonic);

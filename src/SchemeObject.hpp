@@ -324,6 +324,20 @@ set<string> KEYWORDS = {
         "exit", "type",
 };
 
+map<string, string> primitiveInstructionMap{
+        {"+",    "add"},
+        {"-",    "sub"},
+        {"*",    "mul"},
+        {"/",    "div"},
+        {"%",    "mod"},
+        {"=",    "eqn"},
+        {"<",    "lt"},
+        {">",    "gt"},
+        {"<=",   "le"},
+        {">=",   "ge"},
+        {"set!", "set"}
+};
+
 Type typeOfStr(const string &inputStr) {
     if (inputStr.empty()) {
         return Type::UNDEFINED;

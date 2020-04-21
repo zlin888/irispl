@@ -26,20 +26,6 @@ public:
     string ERROR_POSTFIX = "---------------------------------------";
     int ERROR_PREFIX_LEN = ERROR_PREFIX.size() - 1;
 
-    map<string, string> primitiveInstructionMap{
-            {"+",    "add"},
-            {"-",    "sub"},
-            {"*",    "mul"},
-            {"/",    "div"},
-            {"%",    "mod"},
-            {"=",    "eqn"},
-            {"<",    "lt"},
-            {">",    "gt"},
-            {"<=",   "le"},
-            {">=",   "ge"},
-            {"set!", "set"}
-    };
-
     int uniqueStrCounter = 0;
 
     explicit Compiler(AST ast) : ast(std::move(ast)) {};
@@ -237,8 +223,8 @@ void Compiler::compileApplication(Handle handle) {
         // Primitive
         // handle the expected parameters better
         if (firstType == Type::KEYWORD) {
-            if (this->primitiveInstructionMap.count(first)) {
-                this->addInstruction(this->primitiveInstructionMap[first]);
+            if (primitiveInstructionMap.count(first)) {
+                this->addInstruction(primitiveInstructionMap[first]);
             } else {
                 if (first == "list") {
                     if (childrenHoses.size() == 1) {
@@ -615,8 +601,8 @@ void Compiler::compileApply(Handle handle) {
         // Primitive
         // handle the expected parameters better
         if (firstType == Type::KEYWORD) {
-            if (this->primitiveInstructionMap.count(first)) {
-                this->addInstruction(this->primitiveInstructionMap[first]);
+            if (primitiveInstructionMap.count(first)) {
+                this->addInstruction(primitiveInstructionMap[first]);
             } else {
                 if (first == "list") {
                     if (childrenHoses.size() == 1) {
