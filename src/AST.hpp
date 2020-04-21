@@ -158,13 +158,15 @@ Handle AST::getTopApplicationHandle() {
 Handle AST::getTopLambdaHandle() {
     // ((lambda () " + code + "))
     // return the first lambda, which is the top lambda
-    return static_pointer_cast<ApplicationObject>(this->heap.get(this->getTopApplicationHandle()))->childrenHoses[0];
+    auto topAppObjPtr = static_pointer_cast<ApplicationObject>(this->heap.get(this->getTopApplicationHandle()));
+    return topAppObjPtr->childrenHoses[0];
 }
 
 vector<HandleOrStr> AST::getTopLambdaBodies() {
     // return by value !!!!!!!!!!!!!!
-//    return static_pointer_cast<LambdaObject>(this->heap.get(getTopApplicationHandle()))->bodies;
-    return static_pointer_cast<LambdaObject>(this->heap.get(this->getTopLambdaHandle()))->bodies;
+    Handle topLambdaHandle = this->getTopLambdaHandle();
+    auto topLambdaObjptr = static_pointer_cast<LambdaObject>(this->heap.get(topLambdaHandle));
+    return topLambdaObjptr->bodies;
 }
 
 
@@ -178,34 +180,40 @@ void AST::mergeAST(AST anotherAST) {
 //    this->source = anotherAST.source + "\n" + this->source;
     this->sourceCodeMapper.merge(anotherAST.sourceCodeMapper);
 
+
+
+    // merge the top_node_lambda's body
+    // the top_node_lambda's body (lambda () (*))
+    // we only need to lambda's body because the top lambda not has any argument
+    Handle thisTopLambdaHandle = this->getTopLambdaHandle();
+    Handle thisTopApplicationHandle = this->getTopApplicationHandle();
+    vector<HandleOrStr> thisTopLambdaBodies = this->getTopLambdaBodies(); // return by value !!!!
+
+    Handle anotherTopLambdaHandle = anotherAST.getTopLambdaHandle();
+    Handle anotherTopApplicationHandle = anotherAST.getTopApplicationHandle();
+    vector<HandleOrStr> anotherTopLambdaBodies = anotherAST.getTopLambdaBodies();
+
     // merge heap
     for (auto &[handle, schemeObjPtr] : anotherAST.heap.dataMap) {
         this->heap.set(handle, schemeObjPtr);
     }
 
-    // merge the top_node_lambda's body
-    // the top_node_lambda's body (lambda () (*))
-    // we only need to lambda's body because the top lambda not has any argument
-    vector<HandleOrStr> anotherTopLambdaBodies = anotherAST.getTopLambdaBodies();
-    Handle anotherTopLambdaHandle = anotherAST.getTopLambdaHandle();
-
-    vector<HandleOrStr> thisTopLambdaBodies = this->getTopLambdaBodies(); // return by value !!!!
-
     // append the thisTopLambdaBodies to the otherTopLambdaBodies
     anotherTopLambdaBodies.insert(anotherTopLambdaBodies.end(), thisTopLambdaBodies.begin(), thisTopLambdaBodies.end());
 
-    static_pointer_cast<LambdaObject>(this->heap.get(this->getTopLambdaHandle()))->setBodies(anotherTopLambdaBodies);
+    auto thisTopLambdaObjPtr = static_pointer_cast<LambdaObject>(this->heap.get(thisTopLambdaHandle));
+    thisTopLambdaObjPtr->setBodies(anotherTopLambdaBodies);
 
     // Now we have, this ((lambda () (this bodies + anthoer bodies))
     // Then we need to change other's bodies' handles' parentHandle to thisLambda
     for (auto &handle : anotherTopLambdaBodies) {
         // only handle exists in the bodies
-        this->heap.get(handle)->parentHandle = this->getTopLambdaHandle();
+        this->heap.get(handle)->parentHandle = thisTopLambdaHandle;
     }
 
     // we add them to the heap of thisAST
-    this->heap.deleteHandle(anotherAST.getTopLambdaHandle());
-    this->heap.deleteHandle(anotherAST.getTopApplicationHandle());
+    this->heap.deleteHandle(anotherTopLambdaHandle);
+    this->heap.deleteHandle(anotherTopApplicationHandle);
 
     // the heap have been merge, but not the other fields of ast
     // merge each field one by one
@@ -218,13 +226,13 @@ void AST::mergeAST(AST anotherAST) {
     }
 
     for (auto lambdaHandle : anotherAST.getLambdaHandles()) {
-        if (lambdaHandle != anotherAST.getTopLambdaHandle()) {
+        if (lambdaHandle != anotherTopLambdaHandle) {
             this->lambdaHandles.push_back(lambdaHandle);
         }
     }
 
     for (auto handle : anotherAST.tailcalls) {
-        if (handle != anotherAST.getTopApplicationHandle()) {
+        if (handle != anotherTopLambdaHandle) {
             this->tailcalls.push_back(handle);
         }
     }
@@ -249,14 +257,14 @@ void AST::mergeAST(AST anotherAST) {
 }
 
 vector<Handle> AST::getLambdaHandles() {
-    if (this->lambdaHandles.empty()) {
-        for (auto &[handle, schemeObjPtr] : this->heap.dataMap) {
-            if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
-                this->lambdaHandles.push_back(handle);
-            }
+    vector<Handle> lambdaHandles;
+    for (auto &[handle, schemeObjPtr] : this->heap.dataMap) {
+        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+            lambdaHandles.push_back(handle);
         }
     }
-    return this->lambdaHandles;
+    this->lambdaHandles = lambdaHandles;
+    return lambdaHandles;
 }
 
 vector<Handle> AST::getHandles() {
