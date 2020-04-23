@@ -1,6 +1,6 @@
 (define selector-undefined-error 'selector-undefined-error)
 
-(define object
+(define base 
   (lambda (selector) selector-undefined-error))
 
 (define =>

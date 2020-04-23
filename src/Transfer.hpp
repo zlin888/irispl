@@ -325,6 +325,21 @@ namespace Transfer {
 
                     letBodyLambdaObjPtr->addBody(condAppHandle);
 
+                    // __type__ methodApp
+                    Handle typeMethodAppHandle = ast.makeApplication(TRANSFER_PREFIX, originMethodsAppHandle);
+                    auto typeMethodAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(typeMethodAppHandle));
+                    Handle typeLambdaHandle = ast.makeLambda(TRANSFER_PREFIX, typeMethodAppHandle);
+                    auto typeLambdaObjPtr = static_pointer_cast<LambdaObject>(ast.get(typeLambdaHandle));
+                    Handle typeQuoteHandle = ast.makeQuote(TRANSFER_PREFIX, typeLambdaHandle);
+                    auto typeQuoteObjPtr = static_pointer_cast<QuoteObject>(ast.get(typeQuoteHandle));
+                    typeQuoteObjPtr->addChild("'" + applicationObjPtr->childrenHoses[1]);
+                    typeLambdaObjPtr->addParameter("self");
+                    typeLambdaObjPtr->addBody(typeQuoteHandle);
+                    typeMethodAppObjPtr->addChild("__type__");
+                    typeMethodAppObjPtr->addChild(typeLambdaHandle);
+
+                    originMethodsAppObjPtr->addChild(typeMethodAppHandle);
+
                     for (auto methodAppHandle : originMethodsAppObjPtr->childrenHoses) {
                         auto methodAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(methodAppHandle));
 
@@ -337,10 +352,6 @@ namespace Transfer {
                                 ast.get(condBranchPredicateAppHandle));
                         condBranchAppObjPtr->addChild(condBranchPredicateAppHandle);
 
-//                        auto condBranchBodyAppHandle = ast.makeApplication(TRANSFER_PREFIX, condBranchAppHandle);
-//                        auto condBranchBodyAppObjPtr = static_pointer_cast<ApplicationObject>(ast.get(condBranchBodyAppHandle));
-//                        condBranchAppObjPtr->addChild(condBranchBodyAppHandle);
-
                         condBranchPredicateAppObjPtr->addChild("eq?");
                         condBranchPredicateAppObjPtr->addChild("_selector");
 
@@ -348,7 +359,6 @@ namespace Transfer {
                         auto selectionQuoteObjPtr = static_pointer_cast<QuoteObject>(ast.get(selectionQuoteHandle));
                         condBranchPredicateAppObjPtr->addChild(selectionQuoteHandle);
 
-//                        selectionQuoteObjPtr->addChild("quote");
                         selectionQuoteObjPtr->addChild("'" + methodAppObjPtr->childrenHoses[0]);
                         condBranchAppObjPtr->addChild(methodAppObjPtr->childrenHoses[1]);
                         if (typeOfStr(methodAppObjPtr->childrenHoses[1]) == Type::HANDLE) {

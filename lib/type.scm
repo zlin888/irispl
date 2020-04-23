@@ -1,3 +1,6 @@
+(import functools)
+(import object)
+
 (define check-types
   (lambda (_type-list object-list)
     (eq? _type-list (functools.map type object-list))))
@@ -15,7 +18,17 @@
           'shit))
       'bad)))
 
-(define typed-lambda
+(define #lambda
   (lambda (types return-type f)
     (lambda (. args)
       (typed-apply types return-type f args))))
+
+; (class #object-lambda
+;   (closure)
+;   (super object.base)
+;   ((input (lambda (self . args) (apply closure args)))))
+
+(class #object-lambda
+  (closure)
+  (super object.base)
+  ((fetch (lambda (self) 12))))

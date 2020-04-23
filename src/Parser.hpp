@@ -418,8 +418,7 @@ void Parser::parseLog(const string &msg) {
 }
 
 bool Parser::isSymbol(const string &tokenStr) {
-    if (tokenStr == "(" || tokenStr == ")" || tokenStr == "{" || tokenStr == "}" || tokenStr == "[" ||
-        tokenStr == "]") {
+    if (tokenStr == "(" || tokenStr == ")") {
         return false;
     } else if (tokenStr[0] == '\'' || tokenStr[0] == '`' || tokenStr[0] == ',') {
         // shouldn't starts with \' \` and \,
