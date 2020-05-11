@@ -5,7 +5,7 @@
 #ifndef TYPED_SCHEME_ANALYSER_HPP
 #define TYPED_SCHEME_ANALYSER_HPP
 
-#include "SchemeObject.hpp"
+#include "IrisObject.hpp"
 #include "Parser.hpp"
 #include "Utils.hpp"
 #include "Transfer.hpp"
@@ -83,7 +83,7 @@ Handle Analyser::searchVariableLambdaHandle(string var, Handle fromHandle) {
     Handle currentHandle = fromHandle;
     while (currentHandle != TOP_NODE_HANDLE) {
         auto schemeObjPtr = this->ast.get(currentHandle);
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+        if (schemeObjPtr->irisObjectType == IrisObjectType::LAMBDA) {
             if (this->scopes[currentHandle].hasVariable(var)) {
                 return currentHandle;
             }
@@ -102,7 +102,7 @@ Handle Analyser::getParentLambdaHandle(Handle fromHandle) {
     Handle currentHandle = fromHandle;
     while (currentHandle != TOP_NODE_HANDLE) {
         auto schemeObjPtr = this->ast.heap.get(currentHandle);
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+        if (schemeObjPtr->irisObjectType == IrisObjectType::LAMBDA) {
             return currentHandle;
         }
         currentHandle = schemeObjPtr->parentHandle;
@@ -141,10 +141,10 @@ void Analyser::scopeAnalyse() {
     // 1. init the scopes, scope's parent and children
     // 2. put the defined variable to its corresponding scope
     for (auto handle : this->ast.getHandles()) {
-        shared_ptr<SchemeObject> schemeObjPtr = this->ast.get(handle);
+        shared_ptr<IrisObject> schemeObjPtr = this->ast.get(handle);
 
         // init the scope for each lambda
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+        if (schemeObjPtr->irisObjectType == IrisObjectType::LAMBDA) {
             Handle parentHandle = getParentLambdaHandle(handle);
             // not the top lambda
             if (!parentHandle.empty()) {
@@ -157,7 +157,7 @@ void Analyser::scopeAnalyse() {
             for (string parameter : static_pointer_cast<LambdaObject>(schemeObjPtr)->parameters) {
                 scopes[handle].boundVariables.insert(parameter);
             }
-        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+        } else if (schemeObjPtr->irisObjectType == IrisObjectType::APPLICATION) {
             auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
             if (applicationObjPtr->childrenHoses[0] == "define" || applicationObjPtr->childrenHoses[0] == "class") {
                 // define will init variable, therefore, here, we can find out some of the scope of variables
@@ -180,9 +180,9 @@ void Analyser::scopeAnalyse() {
 
     //change the name of all variable
     for (auto &handle : this->ast.getHandles()) {
-        shared_ptr<SchemeObject> schemeObjPtr = this->ast.get(handle);
+        shared_ptr<IrisObject> schemeObjPtr = this->ast.get(handle);
 
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+        if (schemeObjPtr->irisObjectType == IrisObjectType::LAMBDA) {
             auto lambdaObjPtr = static_pointer_cast<LambdaObject>(schemeObjPtr);
 
             //change the parameter names for lambda
@@ -218,11 +218,11 @@ void Analyser::scopeAnalyse() {
                 }
             }
 
-        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION ||
-                   schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE ||
-                   schemeObjPtr->schemeObjectType == SchemeObjectType::QUASIQUOTE) {
+        } else if (schemeObjPtr->irisObjectType == IrisObjectType::APPLICATION ||
+                   schemeObjPtr->irisObjectType == IrisObjectType::UNQUOTE ||
+                   schemeObjPtr->irisObjectType == IrisObjectType::QUASIQUOTE) {
 
-            auto &childrenHoses = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr);
+            auto &childrenHoses = IrisObject::getChildrenHosesOrBodies(schemeObjPtr);
             Handle parentHandle = schemeObjPtr->parentHandle;
 
             // change the variable name in application, unquote and quasiquote
@@ -239,7 +239,8 @@ void Analyser::scopeAnalyse() {
                         boundLambdaHandle = this->searchVariableLambdaHandle(hos, handle);
                     } catch (exception &e) {
                         auto objPtr = static_pointer_cast<ApplicationObject>(ast.get(handle));
-                        utils::raiseError(ast, handle, "hos " + hos + "'s parent Handle " + handle + " not found", ANALYZER_PREFIX);
+                        utils::raiseError(ast, handle, "hos " + hos + "'s parent Handle " + handle + " not found",
+                                          ANALYZER_PREFIX);
                     }
 
                     if (boundLambdaHandle.empty()) {
@@ -278,13 +279,13 @@ void Analyser::tailCallAnalyse() {
 
 }
 
- void Analyser::emptyApplicationDetection(AST &ast) {
+void Analyser::emptyApplicationDetection(AST &ast) {
     for (auto handle : ast.getHandles()) {
-        shared_ptr<SchemeObject> schemeObjPtr;
-        schemeObjPtr = ast.get(handle);
+        shared_ptr<IrisObject> irisObjPtr;
+        irisObjPtr = ast.get(handle);
 
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
-            auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
+        if (irisObjPtr->irisObjectType == IrisObjectType::APPLICATION) {
+            auto applicationObjPtr = static_pointer_cast<ApplicationObject>(irisObjPtr);
             if (applicationObjPtr->childrenHoses.empty()) {
                 string errorMessage = utils::createEmptyApplicationMessage();
                 utils::raiseError(ast, handle, errorMessage, ANALYZER_PREFIX_TITLE);

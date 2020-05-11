@@ -1,0 +1,1 @@
+(display (((lambda () +)) 4 5))

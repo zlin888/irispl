@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include <set>
 #include <boost/algorithm/string.hpp>
-#include "SchemeObject.hpp"
+#include "IrisObject.hpp"
 #include "AST.hpp"
 #include <cstdlib>
 #include <vector>
@@ -189,7 +189,7 @@ namespace utils {
         // else return the type is fine
         Type type = typeOfStr(hos);
         string actualType =
-                type == Type::HANDLE ? SchemeObjectTypeStrMap[ast.get(hos)->schemeObjectType] : TypeStrMap[type];
+                type == Type::HANDLE ? IrisObjectTypeStrMap[ast.get(hos)->irisObjectType] : TypeStrMap[type];
         return actualType;
     }
 
@@ -200,8 +200,8 @@ namespace utils {
         return true;
     }
 
-    bool assertType(AST &ast, HandleOrStr hos, SchemeObjectType schemeObjectType) {
-        if (typeOfStr(hos) == Type::HANDLE && ast.get(hos)->schemeObjectType == schemeObjectType) {
+    bool assertType(AST &ast, HandleOrStr hos, IrisObjectType schemeObjectType) {
+        if (typeOfStr(hos) == Type::HANDLE && ast.get(hos)->irisObjectType == schemeObjectType) {
             return true;
         }
         return false;

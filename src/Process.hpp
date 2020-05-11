@@ -10,7 +10,7 @@
 #include "Instruction.hpp"
 #include "Utils.hpp"
 #include "ModuleLoader.hpp"
-#include "SchemeObject.hpp"
+#include "IrisObject.hpp"
 #include "Heap.hpp"
 
 using namespace std;
@@ -197,7 +197,7 @@ string Process::dereference(const string &variableName) {
 }
 
 Handle Process::newClosure(int instructionAddress) {
-    Handle newClosureHandle = this->heap.allocateHandle(SchemeObjectType::CLOSURE);
+    Handle newClosureHandle = this->heap.allocateHandle(IrisObjectType::CLOSURE);
     this->heap.set(newClosureHandle, std::shared_ptr<Closure>(
             new Closure(instructionAddress, this->currentClosurePtr, newClosureHandle)));
     return newClosureHandle;
@@ -205,7 +205,7 @@ Handle Process::newClosure(int instructionAddress) {
 
 shared_ptr<Closure> Process::getClosurePtr(Handle closureHandle) {
     auto schemeObjectPtr = this->heap.get(closureHandle);
-    if (schemeObjectPtr->schemeObjectType == SchemeObjectType::CLOSURE) {
+    if (schemeObjectPtr->irisObjectType == IrisObjectType::CLOSURE) {
         return static_pointer_cast<Closure>(schemeObjectPtr);
     } else {
         throw std::invalid_argument("[ERROR] Handle is not a closureHandle : Process::getClosurePtr");

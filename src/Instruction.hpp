@@ -6,7 +6,7 @@
 #define TYPED_SCHEME_INSTRUCTION_HPP
 
 #include "Utils.hpp"
-#include "SchemeObject.hpp"
+#include "IrisObject.hpp"
 #include <string>
 #include <regex>
 

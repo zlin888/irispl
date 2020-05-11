@@ -2,8 +2,8 @@
 // Created by Zhitao Lin on 2020/2/9.
 //
 
-#ifndef TYPED_SCHEME_SCHEMEOBJECT_HPP
-#define TYPED_SCHEME_SCHEMEOBJECT_HPP
+#ifndef TYPED_IRIS_IRISOBJECT_HPP
+#define TYPED_IRIS_IRISOBJECT_HPP
 
 #include <memory>
 #include <map>
@@ -16,26 +16,26 @@ using namespace std;
 typedef string Handle;
 typedef string HandleOrStr;
 
-enum class SchemeObjectType {
+enum class IrisObjectType {
     CLOSURE, STRING, LIST, LAMBDA, APPLICATION, QUOTE, QUASIQUOTE, UNQUOTE, CONTINUATION, SchemeChildrenHosesObject
 };
 
-map<SchemeObjectType, string> SchemeObjectTypeStrMap = {
-        {SchemeObjectType::CLOSURE,                   "CLOSURE"},
-        {SchemeObjectType::STRING,                    "STRING"},
-        {SchemeObjectType::LIST,                      "LIST"},
-        {SchemeObjectType::LAMBDA,                    "LAMBDA"},
-        {SchemeObjectType::APPLICATION,               "APPLICATION"},
-        {SchemeObjectType::QUOTE,                     "QUOTE"},
-        {SchemeObjectType::UNQUOTE,                   "UNQUOTE"},
-        {SchemeObjectType::QUASIQUOTE,                "QUASIQUOTE"},
-        {SchemeObjectType::CONTINUATION,              "CONTINUATION"},
-        {SchemeObjectType::SchemeChildrenHosesObject, "SchemeChildrenHosesObject"},
+map<IrisObjectType, string> IrisObjectTypeStrMap = {
+        {IrisObjectType::CLOSURE,                   "CLOSURE"},
+        {IrisObjectType::STRING,                    "STRING"},
+        {IrisObjectType::LIST,                      "LIST"},
+        {IrisObjectType::LAMBDA,                    "LAMBDA"},
+        {IrisObjectType::APPLICATION,               "APPLICATION"},
+        {IrisObjectType::QUOTE,                     "QUOTE"},
+        {IrisObjectType::UNQUOTE,                   "UNQUOTE"},
+        {IrisObjectType::QUASIQUOTE,                "QUASIQUOTE"},
+        {IrisObjectType::CONTINUATION,              "CONTINUATION"},
+        {IrisObjectType::SchemeChildrenHosesObject, "SchemeChildrenHosesObject"},
 };
 
-string schemeObjectTypeToStr(SchemeObjectType schemeObjectType) {
-    if(SchemeObjectTypeStrMap.count(schemeObjectType)) {
-        return SchemeObjectTypeStrMap[schemeObjectType];
+string irisObjectTypeToStr(IrisObjectType irisObjectType) {
+    if(IrisObjectTypeStrMap.count(irisObjectType)) {
+        return IrisObjectTypeStrMap[irisObjectType];
     } else {
         return "";
     }
@@ -43,22 +43,22 @@ string schemeObjectTypeToStr(SchemeObjectType schemeObjectType) {
 
 
 
-class SchemeObject {
+class IrisObject {
 public:
-    SchemeObject(SchemeObjectType schemeObjectType, Handle parentHandle, Handle selfHandle) : schemeObjectType(schemeObjectType),
-                                                                           parentHandle(parentHandle), selfHandle(selfHandle) {};
+    IrisObject(IrisObjectType irisObjectType, Handle parentHandle, Handle selfHandle) : irisObjectType(irisObjectType),
+                                                                                          parentHandle(parentHandle), selfHandle(selfHandle) {};
 
-    SchemeObject(SchemeObjectType schemeObjectType) : schemeObjectType(schemeObjectType) {};
+    IrisObject(IrisObjectType irisObjectType) : irisObjectType(irisObjectType) {};
 
-    SchemeObjectType schemeObjectType;
+    IrisObjectType irisObjectType;
     Handle parentHandle;
     Handle selfHandle;
 
-    static std::vector<HandleOrStr> &getChildrenHosesOrBodies(shared_ptr<SchemeObject> schemeObjPtr);
+    static std::vector<HandleOrStr> &getChildrenHosesOrBodies(shared_ptr<IrisObject> irisObjPtr);
 };
 
 
-class Closure : public SchemeObject {
+class Closure : public IrisObject {
 public:
 
     int instructionAddress{};
@@ -66,13 +66,13 @@ public:
     map<string, string> freeVariables;
     map<string, bool> dirtyFlags;
     std::shared_ptr<Closure> parentClosurePtr;
-    SchemeObjectType schemeObjectType = SchemeObjectType::CLOSURE;
+    IrisObjectType irisObjectType = IrisObjectType::CLOSURE;
     Handle selfHandle;
 
-//    Closure() : SchemeObject(SchemeObjectType::CLOSURE) {};
+//    Closure() : IrisObject(irisObjectType::CLOSURE) {};
 
     Closure(int instructionAddress, const shared_ptr<Closure> &parentClosurePtr, const Handle &selfHandle)
-            : SchemeObject(SchemeObjectType::CLOSURE), instructionAddress(
+            : IrisObject(IrisObjectType::CLOSURE), instructionAddress(
             instructionAddress), parentClosurePtr(parentClosurePtr), selfHandle(selfHandle) {};
 
     void setBoundVariable(const string &variableName, const string &variableValue, bool dirtyFlag);
@@ -90,9 +90,9 @@ public:
     bool isDirtyVairable(const string &variableName);
 };
 
-class ApplicationObject : public SchemeObject {
+class ApplicationObject : public IrisObject {
 public:
-    ApplicationObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::APPLICATION, parentHandle, selfHandle) {};
+    ApplicationObject(Handle parentHandle, Handle selfHandle) : IrisObject(IrisObjectType::APPLICATION, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
@@ -103,13 +103,13 @@ void ApplicationObject::addChild(HandleOrStr childHos) {
     this->childrenHoses.push_back(childHos);
 }
 
-class ListObject : public SchemeObject {
+class ListObject : public IrisObject {
 public:
     bool isFake = false;
     shared_ptr<ListObject> realListObjPtr = nullptr;
     int currentIndex = 0;
 
-    ListObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::LIST, parentHandle, selfHandle) {};
+    ListObject(Handle parentHandle, Handle selfHandle) : IrisObject(IrisObjectType::LIST, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
@@ -157,13 +157,13 @@ void ListObject::pointTo(shared_ptr<ListObject> realListObjPtr, int index) {
 }
 
 // [lambda, [param0, ... ], body0, ...]
-class LambdaObject : public SchemeObject {
+class LambdaObject : public IrisObject {
 public:
-    LambdaObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::LAMBDA, parentHandle, selfHandle) {};
+    LambdaObject(Handle parentHandle, Handle selfHandle) : IrisObject(IrisObjectType::LAMBDA, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> bodies;
     vector<Handle> parameters;
-    SchemeObjectType schemeObjectType = SchemeObjectType::LAMBDA;
+    IrisObjectType irisObjectType = IrisObjectType::LAMBDA;
 
     bool hasParameter(string parameter);
 
@@ -203,9 +203,9 @@ void LambdaObject::setBodies(vector<HandleOrStr> newBodies) {
 //this.children = this.children.slice(0, 2).concat(bodies);
 }
 
-class QuoteObject : public SchemeObject {
+class QuoteObject : public IrisObject {
 public:
-    QuoteObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::QUOTE, parentHandle, selfHandle) {};
+    QuoteObject(Handle parentHandle, Handle selfHandle) : IrisObject(IrisObjectType::QUOTE, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
@@ -220,9 +220,9 @@ void QuoteObject::addChild(HandleOrStr childHos) {
 }
 
 
-class QuasiquoteObject : public SchemeObject {
+class QuasiquoteObject : public IrisObject {
 public:
-    QuasiquoteObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::QUASIQUOTE, parentHandle, selfHandle) {};
+    QuasiquoteObject(Handle parentHandle, Handle selfHandle) : IrisObject(IrisObjectType::QUASIQUOTE, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
@@ -233,9 +233,9 @@ void QuasiquoteObject::addChild(HandleOrStr childHos) {
     this->childrenHoses.push_back(childHos);
 }
 
-class UnquoteObject : public SchemeObject {
+class UnquoteObject : public IrisObject {
 public:
-    UnquoteObject(Handle parentHandle, Handle selfHandle) : SchemeObject(SchemeObjectType::UNQUOTE, parentHandle, selfHandle) {};
+    UnquoteObject(Handle parentHandle, Handle selfHandle) : IrisObject(IrisObjectType::UNQUOTE, parentHandle, selfHandle) {};
 
     vector<HandleOrStr> childrenHoses;
 
@@ -246,12 +246,12 @@ void UnquoteObject::addChild(HandleOrStr childHos) {
     this->childrenHoses.push_back(childHos);
 }
 
-class StringObject : public SchemeObject {
+class StringObject : public IrisObject {
 public:
     string content;
-    SchemeObjectType schemeObjectType = SchemeObjectType::STRING;
+    IrisObjectType irisObjectType = IrisObjectType::STRING;
 
-    StringObject(string content) : SchemeObject(SchemeObjectType::STRING), content(content) {}
+    StringObject(string content) : IrisObject(IrisObjectType::STRING), content(content) {}
 };
 
 //=================================================================
@@ -364,22 +364,22 @@ Type typeOfStr(const string &inputStr) {
     }
 }
 
-std::vector<HandleOrStr> &SchemeObject::getChildrenHosesOrBodies(shared_ptr<SchemeObject> schemeObjPtr) {
-    if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
-        return static_pointer_cast<ApplicationObject>(schemeObjPtr)->childrenHoses;
-    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE) {
-        return static_pointer_cast<UnquoteObject>(schemeObjPtr)->childrenHoses;
-    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUOTE) {
-        return static_pointer_cast<QuoteObject>(schemeObjPtr)->childrenHoses;
-    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUASIQUOTE) {
-        return static_pointer_cast<QuasiquoteObject>(schemeObjPtr)->childrenHoses;
-    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
-        return static_pointer_cast<LambdaObject>(schemeObjPtr)->bodies;
-    } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
-        return static_pointer_cast<ListObject>(schemeObjPtr)->childrenHoses;
+std::vector<HandleOrStr> &IrisObject::getChildrenHosesOrBodies(shared_ptr<IrisObject> irisObjPtr) {
+    if (irisObjPtr->irisObjectType == IrisObjectType::APPLICATION) {
+        return static_pointer_cast<ApplicationObject>(irisObjPtr)->childrenHoses;
+    } else if (irisObjPtr->irisObjectType == IrisObjectType::UNQUOTE) {
+        return static_pointer_cast<UnquoteObject>(irisObjPtr)->childrenHoses;
+    } else if (irisObjPtr->irisObjectType == IrisObjectType::QUOTE) {
+        return static_pointer_cast<QuoteObject>(irisObjPtr)->childrenHoses;
+    } else if (irisObjPtr->irisObjectType == IrisObjectType::QUASIQUOTE) {
+        return static_pointer_cast<QuasiquoteObject>(irisObjPtr)->childrenHoses;
+    } else if (irisObjPtr->irisObjectType == IrisObjectType::LAMBDA) {
+        return static_pointer_cast<LambdaObject>(irisObjPtr)->bodies;
+    } else if (irisObjPtr->irisObjectType == IrisObjectType::LIST) {
+        return static_pointer_cast<ListObject>(irisObjPtr)->childrenHoses;
     }
     throw std::runtime_error("[getChildrenHoses] not a application, unquote or quasiquote");
 }
 
 
-#endif //TYPED_SCHEME_SCHEMEOBJECT_HPP
+#endif //TYPED_IRIS_IRISOBJECT_HPP

@@ -10,7 +10,7 @@
 #include <vector>
 #include <string>
 #include "Parser.hpp"
-#include "SchemeObject.hpp"
+#include "IrisObject.hpp"
 #include "Instruction.hpp"
 
 using namespace std;
@@ -155,16 +155,16 @@ void Compiler::compileHos(HandleOrStr hos) {
 
     if (hosType == Type::HANDLE) {
         auto schemeObjPtr = this->ast.get(hos);
-        SchemeObjectType schemeObjectType = schemeObjPtr->schemeObjectType;
+        IrisObjectType schemeObjectType = schemeObjPtr->irisObjectType;
 
-        if (schemeObjectType == SchemeObjectType::LAMBDA) {
+        if (schemeObjectType == IrisObjectType::LAMBDA) {
             this->addInstruction("loadclosure @" + hos);
-        } else if (schemeObjectType == SchemeObjectType::QUOTE || schemeObjectType == SchemeObjectType::STRING) {
+        } else if (schemeObjectType == IrisObjectType::QUOTE || schemeObjectType == IrisObjectType::STRING) {
             this->addInstruction("push " + hos);
-        } else if (schemeObjectType == SchemeObjectType::QUASIQUOTE) {
+        } else if (schemeObjectType == IrisObjectType::QUASIQUOTE) {
             this->compileQuasiquote(hos);
-        } else if (schemeObjectType == SchemeObjectType::APPLICATION ||
-                   schemeObjectType == SchemeObjectType::UNQUOTE) {
+        } else if (schemeObjectType == IrisObjectType::APPLICATION ||
+                   schemeObjectType == IrisObjectType::UNQUOTE) {
             this->compileApplication(hos);
         }
     } else if (this->ast.isNativeCall(hos)) {
@@ -202,7 +202,7 @@ void Compiler::compileApplication(Handle handle) {
     else if (first == "fork") { return this->compileFork(handle); }
     else if (first == "apply") {return this->compileApply(handle); }
 
-    if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::APPLICATION) {
+    if (firstType == Type::HANDLE && this->ast.get(first)->irisObjectType == IrisObjectType::APPLICATION) {
         this->compileComplexApplication(handle);
         return;
     } else if (utils::makeSet<Type>(3, Type::HANDLE, Type::VARIABLE, Type::KEYWORD).count(firstType)) {
@@ -239,7 +239,7 @@ void Compiler::compileApplication(Handle handle) {
         } else if (std::find(this->ast.tailcalls.begin(), this->ast.tailcalls.end(), handle) !=
                    this->ast.tailcalls.end()) {
             // we don't has tailcalls right now
-            if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
+            if (firstType == Type::HANDLE && this->ast.get(first)->irisObjectType == IrisObjectType::LAMBDA) {
                 this->addInstruction("tailcall " + first);
             } else if (firstType == Type::VARIABLE) {
                 // include native
@@ -248,7 +248,7 @@ void Compiler::compileApplication(Handle handle) {
                 throw std::runtime_error("[compileApplication] the first argument is not callable.");
             }
         } else {
-            if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
+            if (firstType == Type::HANDLE && this->ast.get(first)->irisObjectType == IrisObjectType::LAMBDA) {
                 auto lambdaObjPtr = static_pointer_cast<LambdaObject>(this->ast.get(first));
                 this->addInstruction("call @" + first);
             } else if (firstType == Type::VARIABLE) {
@@ -327,16 +327,16 @@ void Compiler::compileDefine(Handle handle) {
     if (typeOfStr(childrenHoses[2]) == Type::HANDLE) {
         auto schemeObjPtr = this->ast.get(childrenHoses[2]);
 
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+        if (schemeObjPtr->irisObjectType == IrisObjectType::LAMBDA) {
             this->addInstruction("push @" + childrenHoses[2]); // go to the label
-        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUOTE) {
+        } else if (schemeObjPtr->irisObjectType == IrisObjectType::QUOTE) {
             this->addInstruction("push " + childrenHoses[2]);
-        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::QUASIQUOTE) {
+        } else if (schemeObjPtr->irisObjectType == IrisObjectType::QUASIQUOTE) {
             this->compileQuasiquote(childrenHoses[2]);
-        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::STRING) {
+        } else if (schemeObjPtr->irisObjectType == IrisObjectType::STRING) {
             this->addInstruction("push " + childrenHoses[2]);
-        } else if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION ||
-                   schemeObjPtr->schemeObjectType == SchemeObjectType::UNQUOTE) {
+        } else if (schemeObjPtr->irisObjectType == IrisObjectType::APPLICATION ||
+                   schemeObjPtr->irisObjectType == IrisObjectType::UNQUOTE) {
             this->compileApplication(childrenHoses[2]);
         } else {
             throw std::runtime_error("[compileDefine] define's second argument " + childrenHoses[2] + " is invalid");
@@ -413,7 +413,7 @@ void Compiler::compileCond(Handle handle) {
             Type predicateType = typeOfStr(predicate);
             if (predicateType == Type::HANDLE) {
                 auto predicateObjPtr = this->ast.get(predicate);
-                if (predicateObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+                if (predicateObjPtr->irisObjectType == IrisObjectType::APPLICATION) {
                     this->compileApplication(predicate);
                 } else {
                     // push all, for other situation
@@ -459,7 +459,7 @@ void Compiler::compileIf(Handle handle) {
     Type predicateType = typeOfStr(predicate);
     if (predicateType == Type::HANDLE) {
         auto predicateObjPtr = this->ast.get(predicate);
-        if (predicateObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+        if (predicateObjPtr->irisObjectType == IrisObjectType::APPLICATION) {
             this->compileApplication(predicate);
         } else {
             // push all, for other situation
@@ -591,7 +591,7 @@ void Compiler::compileApply(Handle handle) {
     else if (first == "fork") { return this->compileFork(handle); }
     else if (first == "apply") {return this->compileApply(handle); }
 
-    if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::APPLICATION) {
+    if (firstType == Type::HANDLE && this->ast.get(first)->irisObjectType == IrisObjectType::APPLICATION) {
         this->compileComplexApplication(handle);
         return;
     } else if (utils::makeSet<Type>(3, Type::HANDLE, Type::VARIABLE, Type::KEYWORD).count(firstType)) {
@@ -617,7 +617,7 @@ void Compiler::compileApply(Handle handle) {
         } else if (std::find(this->ast.tailcalls.begin(), this->ast.tailcalls.end(), handle) !=
                    this->ast.tailcalls.end()) {
             // we don't has tailcalls right now
-            if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
+            if (firstType == Type::HANDLE && this->ast.get(first)->irisObjectType == IrisObjectType::LAMBDA) {
                 this->addInstruction("tailcall " + first);
             } else if (firstType == Type::VARIABLE) {
                 // include native
@@ -626,7 +626,7 @@ void Compiler::compileApply(Handle handle) {
                 throw std::runtime_error("[compileApplication] the first argument is not callable.");
             }
         } else {
-            if (firstType == Type::HANDLE && this->ast.get(first)->schemeObjectType == SchemeObjectType::LAMBDA) {
+            if (firstType == Type::HANDLE && this->ast.get(first)->irisObjectType == IrisObjectType::LAMBDA) {
                 auto lambdaObjPtr = static_pointer_cast<LambdaObject>(this->ast.get(first));
                 this->addInstruction("call @" + first);
             } else if (firstType == Type::VARIABLE) {
@@ -657,8 +657,8 @@ void Compiler::compileCallCC(Handle handle) {
     this->addInstruction("load " + contLabel);
 
     if (thunkType == Type::HANDLE) {
-        shared_ptr<SchemeObject> schemeObjPtr = this->ast.get(thunk);
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+        shared_ptr<IrisObject> schemeObjPtr = this->ast.get(thunk);
+        if (schemeObjPtr->irisObjectType == IrisObjectType::LAMBDA) {
             this->addInstruction("call @" + thunk);
         } else {
             throw "[compileCallCC] call/cc's argument must be a thunk";

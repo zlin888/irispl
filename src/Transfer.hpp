@@ -7,7 +7,7 @@
 
 #include "Parser.hpp"
 #include "Heap.hpp"
-#include "SchemeObject.hpp"
+#include "IrisObject.hpp"
 
 namespace Transfer {
 
@@ -27,7 +27,7 @@ namespace Transfer {
 
     void transferLet(AST &ast) {
         for (auto handle : ast.getHandles()) {
-            shared_ptr<SchemeObject> schemeObjPtr;
+            shared_ptr<IrisObject> schemeObjPtr;
             try {
                 schemeObjPtr = ast.get(handle);
             } catch (exception &e) {
@@ -36,7 +36,7 @@ namespace Transfer {
             }
 
             // find let application
-            if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+            if (schemeObjPtr->irisObjectType == IrisObjectType::APPLICATION) {
 
                 auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
                 if (applicationObjPtr->childrenHoses.size() >= 1 && applicationObjPtr->childrenHoses[0] == "let") {
@@ -77,7 +77,7 @@ namespace Transfer {
                     // put the init as the argument of the let lambda
                     for (Handle bindingHandle: bindingsAppPtr->childrenHoses) {
                         auto bindingSchemeObjptr = ast.get(bindingHandle);
-                        if (bindingSchemeObjptr->schemeObjectType == SchemeObjectType::APPLICATION) {
+                        if (bindingSchemeObjptr->irisObjectType == IrisObjectType::APPLICATION) {
                             auto bindingAppObjPtr = static_pointer_cast<ApplicationObject>(bindingSchemeObjptr);
                             if (bindingAppObjPtr->childrenHoses.size() != 2) {
                                 throw std::runtime_error(
@@ -112,7 +112,7 @@ namespace Transfer {
 
     void transferClass(AST &ast) {
         for (auto handle : ast.getHandles()) {
-            shared_ptr<SchemeObject> schemeObjPtr;
+            shared_ptr<IrisObject> schemeObjPtr;
             try {
                 schemeObjPtr = ast.get(handle);
             } catch (exception &e) {
@@ -121,7 +121,7 @@ namespace Transfer {
             }
 
 
-            if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+            if (schemeObjPtr->irisObjectType == IrisObjectType::APPLICATION) {
                 auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
                 if (applicationObjPtr->childrenHoses[0] == "class") {
                     // inside of the class application
@@ -146,9 +146,9 @@ namespace Transfer {
                     // the rest of children are applications
                     for (int k = 2; k < 5; ++k) {
                         if (!utils::assertType(ast, applicationObjPtr->childrenHoses[k],
-                                               SchemeObjectType::APPLICATION)) {
+                                               IrisObjectType::APPLICATION)) {
                             string errorMessage = utils::createArgumentTypeErrorMessage("class", "first argument",
-                                                                                        SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
+                                                                                        IrisObjectTypeStrMap[IrisObjectType::APPLICATION],
                                                                                         applicationObjPtr->childrenHoses[k]);
                             utils::raiseError(ast, handle, errorMessage,
                                               TRANSFER_PREFIX_TITLE);
@@ -203,10 +203,10 @@ namespace Transfer {
                     for (int i = 0; i < originMethodsAppObjPtr->childrenHoses.size(); i++) {
                         // application
                         if (!utils::assertType(ast, originMethodsAppObjPtr->childrenHoses[i],
-                                               SchemeObjectType::APPLICATION)) {
+                                               IrisObjectType::APPLICATION)) {
                             string errorMessage = utils::createArgumentTypeErrorMessage("class.methods",
                                                                                         "method " + to_string(i),
-                                                                                        SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
+                                                                                        IrisObjectTypeStrMap[IrisObjectType::APPLICATION],
                                                                                         utils::getActualTypeStr(
                                                                                                 ast,
                                                                                                 originMethodsAppObjPtr->childrenHoses[i]));
@@ -271,10 +271,10 @@ namespace Transfer {
                     // for the first case
                     if (typeOfStr(originSuperAppObjPtr->childrenHoses[1]) == Type::HANDLE) {
                         if (!utils::assertType(ast, originSuperAppObjPtr->childrenHoses[1],
-                                               SchemeObjectType::APPLICATION)) {
+                                               IrisObjectType::APPLICATION)) {
                             string errorMessage = utils::createArgumentTypeErrorMessage("class.super",
                                                                                         "second argument",
-                                                                                        SchemeObjectTypeStrMap[SchemeObjectType::APPLICATION],
+                                                                                        IrisObjectTypeStrMap[IrisObjectType::APPLICATION],
                                                                                         utils::getActualTypeStr(
                                                                                                 ast,
                                                                                                 originSuperAppObjPtr->childrenHoses[1]));

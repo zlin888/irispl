@@ -57,40 +57,40 @@ namespace Lexer {
                     tempTokens.clear();
                 }
                 // Matching String Token
-                if (code[i] == '"') {
-                    int originIndex = i;
-                    // ? means greedy matching
-                    string resultStr = "\"";
-                    i += 1;
-                    bool stringMatchFlag = false;
+if (code[i] == '"') {
+    int originIndex = i;
+    // ? means greedy matching
+    string resultStr = "\"";
+    i += 1;
+    bool stringMatchFlag = false;
 
-                    while (i < code.size()) {
-                        if (code[i] == '"') {
-                            resultStr += code[i];
-                            stringMatchFlag = true;
-                            break;
-                        } else if (code[i] == '\\' && i + 1 < code.size()) {
-                            if (code[i + 1] != '"' && code[i + 1] != '\\') {
-                                resultStr += code[i];
-                            }
-                            resultStr += code[i + 1];
-                            i += 2;
-                        } else {
-                            resultStr += code[i];
-                            i += 1;
-                        }
-                    }
+    while (i < code.size()) {
+        if (code[i] == '"') {
+            resultStr += code[i];
+            stringMatchFlag = true;
+            break;
+        } else if (code[i] == '\\' && i + 1 < code.size()) {
+            if (code[i + 1] != '"' && code[i + 1] != '\\') {
+                resultStr += code[i];
+            }
+            resultStr += code[i + 1];
+            i += 2;
+        } else {
+            resultStr += code[i];
+            i += 1;
+        }
+    }
 
-                    if (!stringMatchFlag) {
-                        // Doesn't match a proper string
-                        throw std::runtime_error("[error] can't match '\"'" + code.substr(originIndex,
-                                                                                          originIndex + 5 < code.size()
-                                                                                          ? originIndex + 5
-                                                                                          : code.size()) +
-                                                 "... : Lexer::lexer_string_matching");
-                    } else {
-                        tokens.push_back(Lexer::Token(resultStr, i));
-                    }
+    if (!stringMatchFlag) {
+        // Doesn't match a proper string
+        throw std::runtime_error("[error] can't match '\"'" + code.substr(originIndex,
+                                                                            originIndex + 5 < code.size()
+                                                                            ? originIndex + 5
+                                                                            : code.size()) +
+                                    "... : Lexer::lexer_string_matching");
+    } else {
+        tokens.push_back(Lexer::Token(resultStr, i));
+    }
                 } else {
                     tokens.push_back(Lexer::Token(std::string(1, code[i]), i));
                 }

@@ -8,7 +8,7 @@
 #include <string>
 #include <iostream>
 #include "Lexer.hpp"
-#include "SchemeObject.hpp"
+#include "IrisObject.hpp"
 #include "Heap.hpp"
 #include <stdexcept>
 #include <boost/algorithm/string.hpp>
@@ -433,7 +433,7 @@ void Parser::preProcessAnalysis() {
     for (auto &[handle, schemeObjPtr] : this->ast.heap.dataMap) {
         // Handle the import
         // (import Alias Path)
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
+        if (schemeObjPtr->irisObjectType == IrisObjectType::APPLICATION) {
             auto applicationObjPtr = static_pointer_cast<ApplicationObject>(schemeObjPtr);
             if (!applicationObjPtr->childrenHoses.empty() and applicationObjPtr->childrenHoses[0] == "import") {
 
@@ -457,7 +457,7 @@ void Parser::preProcessAnalysis() {
 
                     // get the string from handle: handle -> /path/to/module
                     auto stringObjptr = this->ast.heap.get(modulePathHandle);
-                    if (stringObjptr->schemeObjectType == SchemeObjectType::STRING) {
+                    if (stringObjptr->irisObjectType == IrisObjectType::STRING) {
                         string modulePath = static_pointer_cast<StringObject>(stringObjptr)->content;
                         modulePath = modulePath.substr(1, modulePath.size() - 2); // trim " on both side
 

@@ -1,4 +1,4 @@
-call @&mytest.LAMBDA_1
+scall @&mytest.LAMBDA_1
 halt
 @&mytest.LAMBDA_1
 push 3

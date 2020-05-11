@@ -3,7 +3,7 @@
 
 #include "Process.hpp"
 #include "ModuleLoader.hpp"
-#include "SchemeObject.hpp"
+#include "IrisObject.hpp"
 
 #include <string>
 #include <map>
@@ -565,9 +565,9 @@ void Runtime::ailCall(const Instruction &instruction, bool isTailCall) {
         }
 
         Handle handle = instruction.argument;
-        shared_ptr<SchemeObject> schemeObjPtr = this->currentProcessPtr->heap.get(handle);
+        shared_ptr<IrisObject> schemeObjPtr = this->currentProcessPtr->heap.get(handle);
 
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::CLOSURE) {
+        if (schemeObjPtr->irisObjectType == IrisObjectType::CLOSURE) {
             auto closurePtr = static_pointer_cast<Closure>(schemeObjPtr);
             this->currentProcessPtr->setCurrentClosure(handle);
             this->currentProcessPtr->gotoAddress(closurePtr->instructionAddress);
@@ -911,13 +911,13 @@ bool Runtime::isEq(HandleOrStr operand1, HandleOrStr operand2) {
         auto schemeObjPtr1 = this->currentProcessPtr->heap.get(operand1);
         auto schemeObjPtr2 = this->currentProcessPtr->heap.get(operand2);
 
-        if (schemeObjPtr1->schemeObjectType != schemeObjPtr2->schemeObjectType) {
+        if (schemeObjPtr1->irisObjectType != schemeObjPtr2->irisObjectType) {
             return false;
         }
 
-        if (schemeObjPtr1->schemeObjectType == SchemeObjectType::QUOTE) {
-            auto hoses1 = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr1);
-            auto hoses2 = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr2);
+        if (schemeObjPtr1->irisObjectType == IrisObjectType::QUOTE) {
+            auto hoses1 = IrisObject::getChildrenHosesOrBodies(schemeObjPtr1);
+            auto hoses2 = IrisObject::getChildrenHosesOrBodies(schemeObjPtr2);
 
             if (this->areHosesEqual(hoses1, hoses2)) {
                 return true;
@@ -925,7 +925,7 @@ bool Runtime::isEq(HandleOrStr operand1, HandleOrStr operand2) {
                 return false;
             }
 
-        } else if (schemeObjPtr1->schemeObjectType == SchemeObjectType::LIST) {
+        } else if (schemeObjPtr1->irisObjectType == IrisObjectType::LIST) {
             auto l1ObjPtr = static_pointer_cast<ListObject>(schemeObjPtr1);
             auto l2ObjPtr = static_pointer_cast<ListObject>(schemeObjPtr2);
 
@@ -975,7 +975,7 @@ void Runtime::ailIsList() {
 
     if (typeOfStr(argument) == Type::HANDLE) {
         auto schemeObjPtr = this->currentProcessPtr->heap.get(argument);
-        if (schemeObjPtr->schemeObjectType != SchemeObjectType::LIST) {
+        if (schemeObjPtr->irisObjectType != IrisObjectType::LIST) {
             this->currentProcessPtr->pushOperand("#f");
         } else {
             this->currentProcessPtr->pushOperand("#t");
@@ -993,7 +993,7 @@ void Runtime::ailIsPair() {
 
     if (typeOfStr(argument) == Type::HANDLE) {
         auto schemeObjPtr = this->currentProcessPtr->heap.get(argument);
-        if (schemeObjPtr->schemeObjectType != SchemeObjectType::LIST) {
+        if (schemeObjPtr->irisObjectType != IrisObjectType::LIST) {
             this->currentProcessPtr->pushOperand("#f");
         } else {
             auto listObjPtr = static_pointer_cast<ListObject>(schemeObjPtr);
@@ -1036,8 +1036,8 @@ void Runtime::ailType() {
 string Runtime::toType(HandleOrStr hos) {
     Type hosType = typeOfStr(hos);
     if (hosType == Type::HANDLE) {
-        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
-        return SchemeObjectTypeStrMap[schemeObjectPtr->schemeObjectType];
+        shared_ptr<IrisObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
+        return IrisObjectTypeStrMap[schemeObjectPtr->irisObjectType];
     } else {
         return TypeStrMap[hosType];
     }
@@ -1061,13 +1061,13 @@ void Runtime::ailDisplay() {
 string Runtime::toStr(HandleOrStr hos) {
     Type hosType = typeOfStr(hos);
     if (hosType == Type::HANDLE) {
-        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
-        if (schemeObjectPtr->schemeObjectType == SchemeObjectType::STRING) {
+        shared_ptr<IrisObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
+        if (schemeObjectPtr->irisObjectType == IrisObjectType::STRING) {
             auto stringObjPtr = static_pointer_cast<StringObject>(schemeObjectPtr);
             return stringObjPtr->content;
-        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::QUOTE) {
+        } else if (schemeObjectPtr->irisObjectType == IrisObjectType::QUOTE) {
             string buffer = "(";
-            auto hoses = SchemeObject::getChildrenHosesOrBodies(schemeObjectPtr);
+            auto hoses = IrisObject::getChildrenHosesOrBodies(schemeObjectPtr);
             for (int i = 0; i < hoses.size(); ++i) {
                 buffer += this->toStr(hoses[i]);
                 if (i != hoses.size() - 1) {
@@ -1080,13 +1080,13 @@ string Runtime::toStr(HandleOrStr hos) {
                 buffer += ")";
             }
             return buffer;
-        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::CLOSURE) {
+        } else if (schemeObjectPtr->irisObjectType == IrisObjectType::CLOSURE) {
             return "<lambda: " + hos + " >";
-        } else if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
+        } else if (schemeObjectPtr->irisObjectType == IrisObjectType::LIST) {
             auto listObjPtr = static_pointer_cast<ListObject>(schemeObjectPtr);
             int currentIndex = listObjPtr->currentIndex;
             string buffer = "(";
-            auto hoses = SchemeObject::getChildrenHosesOrBodies(listObjPtr->realListObjPtr);
+            auto hoses = IrisObject::getChildrenHosesOrBodies(listObjPtr->realListObjPtr);
             for (int i = currentIndex; i < hoses.size(); ++i) {
                 buffer += this->toStr(hoses[i]);
                 if (i != hoses.size() - 1) {
@@ -1099,7 +1099,7 @@ string Runtime::toStr(HandleOrStr hos) {
             buffer += ")"; //always finished brackets
             return buffer;
         } else {
-            return hos + " " + schemeObjectTypeToStr(schemeObjectPtr->schemeObjectType);
+            return hos + " " + irisObjectTypeToStr(schemeObjectPtr->irisObjectType);
         }
     } else if (hosType == Type::NUMBER || hosType == Type::BOOLEAN || hosType == Type::KEYWORD) {
         return hos;
@@ -1165,8 +1165,8 @@ void Runtime::ailCar() {
     Type hosType = typeOfStr(hos);
 
     if (hosType == Type::HANDLE) {
-        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
-        if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
+        shared_ptr<IrisObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
+        if (schemeObjectPtr->irisObjectType == IrisObjectType::LIST) {
             shared_ptr<ListObject> listObjStr = static_pointer_cast<ListObject>(schemeObjectPtr);
             this->currentProcessPtr->pushOperand(listObjStr->car());
         } else {
@@ -1190,8 +1190,8 @@ void Runtime::ailCdr() {
     Type hosType = typeOfStr(hos);
 
     if (hosType == Type::HANDLE) {
-        shared_ptr<SchemeObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
-        if (schemeObjectPtr->schemeObjectType == SchemeObjectType::LIST) {
+        shared_ptr<IrisObject> schemeObjectPtr = this->currentProcessPtr->heap.get(hos);
+        if (schemeObjectPtr->irisObjectType == IrisObjectType::LIST) {
             shared_ptr<ListObject> listObjPtr = static_pointer_cast<ListObject>(schemeObjectPtr);
 
 
@@ -1244,7 +1244,7 @@ void Runtime::ailCons() {
         Type hosType = typeOfStr(hos);
         if (hosType == Type::HANDLE) {
             auto schemeObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
-            if (schemeObjPtr->schemeObjectType == SchemeObjectType::LIST) {
+            if (schemeObjPtr->irisObjectType == IrisObjectType::LIST) {
                 auto listObjPtr = static_pointer_cast<ListObject>(this->currentProcessPtr->heap.get(hos));
                 for (int i = listObjPtr->currentIndex; i < listObjPtr->realListObjPtr->childrenHoses.size(); i++) {
                     consListObjPtr->addChild(listObjPtr->childrenHoses[i]);

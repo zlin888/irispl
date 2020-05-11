@@ -46,7 +46,7 @@ public:
 
     void mergeAST(AST anotherAST);
 
-    shared_ptr<SchemeObject> get(Handle handle);
+    shared_ptr<IrisObject> get(Handle handle);
 
     bool isNativeCall(string nativeCall);
 
@@ -100,7 +100,7 @@ void AST::deleteHandleRecursivly(HandleOrStr hos) {
     try {
         if(typeOfStr(hos) == Type::HANDLE) {
             if(this->heap.hasHandle(hos)) {
-                auto childrenHoses = SchemeObject::getChildrenHosesOrBodies(this->get(hos));
+                auto childrenHoses = IrisObject::getChildrenHosesOrBodies(this->get(hos));
                 for (auto hos : childrenHoses) {
                     this->deleteHandleRecursivly(hos);
                 }
@@ -129,7 +129,7 @@ void AST::setHandleSourceIndexMapping(Handle handle, int index) {
 }
 
 
-shared_ptr<SchemeObject> AST::get(Handle handle) {
+shared_ptr<IrisObject> AST::get(Handle handle) {
     try {
         return this->heap.get(handle);
     } catch (exception &e){
@@ -142,7 +142,7 @@ Handle AST::getTopApplicationHandle() {
     // the first sList
     Handle topApplicationHandle;
     for (auto &[handle, schemeObjPtr] : this->heap.dataMap) {
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION &&
+        if (schemeObjPtr->irisObjectType == IrisObjectType::APPLICATION &&
             static_pointer_cast<ApplicationObject>(schemeObjPtr)->parentHandle == TOP_NODE_HANDLE) {
             topApplicationHandle = handle;
             break;
@@ -259,7 +259,7 @@ void AST::mergeAST(AST anotherAST) {
 vector<Handle> AST::getLambdaHandles() {
     vector<Handle> lambdaHandles;
     for (auto &[handle, schemeObjPtr] : this->heap.dataMap) {
-        if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA) {
+        if (schemeObjPtr->irisObjectType == IrisObjectType::LAMBDA) {
             lambdaHandles.push_back(handle);
         }
     }

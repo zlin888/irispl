@@ -81,7 +81,7 @@ Module Module::loadModuleFromCode(string code) {
     module.makeImportedNameUnique();
 
     Module mergeModule;
-    mergeModule.ast = module.allASTs[Module::getModuleNameFromPath("repl")];
+    mergeModule.ast = module.allASTs["repl"];
 
     // -1 to skip the last module
     // the top module, the module that you run, is always the last module in the sorted list
@@ -122,10 +122,10 @@ Module Module::loadModule(string path) {
 
 void Module::importModuleFromCode(string &code) {
     // for repl
-    string moduleName = this->getModuleNameFromPath("repl");
+    string moduleName = "repl";
     string path = "repl";
 
-    AST currentAST(moduleName, code, path);
+    AST currentAST(code, moduleName, path);
 
     currentAST = Parser::parse(Lexer::tokenize(code), moduleName, code, currentAST);
     currentAST = Analyser::analyse(currentAST);
@@ -173,9 +173,9 @@ void Module::makeImportedNameUnique() {
         for (auto &[handle, schemeObjPtr] : currentAST.heap.dataMap) {
             // only the children of lambda and application will be variable
 
-            if (schemeObjPtr->schemeObjectType == SchemeObjectType::LAMBDA ||
-                schemeObjPtr->schemeObjectType == SchemeObjectType::APPLICATION) {
-                vector<HandleOrStr> &hoses = SchemeObject::getChildrenHosesOrBodies(schemeObjPtr);
+            if (schemeObjPtr->irisObjectType == IrisObjectType::LAMBDA ||
+                schemeObjPtr->irisObjectType == IrisObjectType::APPLICATION) {
+                vector<HandleOrStr> &hoses = IrisObject::getChildrenHosesOrBodies(schemeObjPtr);
 
                 if (!hoses.empty() && hoses[0] != "import") {
                     // (Application of import does not need to be change name
