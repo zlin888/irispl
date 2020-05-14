@@ -687,9 +687,9 @@ void Compiler::beginCompile() {
         this->compileLambda(lambdaHandle);
     }
 
-    for (auto &inst : this->ILCode) {
-        cout << inst.instructionStr << endl;
-    }
+//    for (auto &inst : this->ILCode) {
+//        cout << inst.instructionStr << endl;
+//    }
 }
 
 string Compiler::createErrorMessage(string message, Handle handle) {

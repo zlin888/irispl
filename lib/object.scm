@@ -1,7 +1,7 @@
 (define selector-undefined-error 'selector-undefined-error)
 
 (define base 
-  (lambda (selector) selector-undefined-error))
+  (lambda (selector self) selector-undefined-error))
 
 (define =>
   (lambda (instance method . args)
