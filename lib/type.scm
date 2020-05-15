@@ -1,6 +1,9 @@
 (import functools)
 (import object)
 
+(define number 'NUMBER)
+(define string 'STRING)
+
 (define check-types
   (lambda (_type-list object-list)
     (eq? _type-list (functools.map type object-list))))
@@ -15,8 +18,8 @@
       (let ((result (apply f args)))
         (if (check-type return-type result)
           result
-          'shit))
-      'bad)))
+          'return-type-error))
+      'argument-type-error)))
 
 (define #lambda
   (lambda (types return-type f)
