@@ -1,3 +1,5 @@
+*.swp
+
 # Prerequisites
 *.d
 
@@ -46,3 +48,5 @@ bin
 iris
 iris.cbp
 /build
+
+

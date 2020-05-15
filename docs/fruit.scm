@@ -17,5 +17,3 @@
 (object.=> red-apple 'set-color! "blue")
 (display (object.=> red-apple 'get-color))
 
-
-
