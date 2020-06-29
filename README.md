@@ -12,6 +12,17 @@ Yet another lisp-language. Typed-scheme in C++ VM
 ❎ Garbage Collection \
 ❎ Package Manager
 
+# Usage
+## Compile
+It, at lease, can be compiled with clang 11.0.0 under the MacOS Catalina.
+```
+git@github.com:zlin888/irispl.git
+cd irispl
+make
+```
+## Run
+`./main` is the REPL program. \
+`./main path/to/your/iris.scm/file` will compile your iris code and execute it via the VM.
 
 # User Manual
 
