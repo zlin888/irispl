@@ -1,4 +1,4 @@
-# typed-scheme
+# Irispl
 Yet another lisp-language. Typed-scheme in C++ VM
 
 ✅ List \
