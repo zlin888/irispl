@@ -18,6 +18,7 @@ It, at lease, can be compiled with clang 11.0.0 under the MacOS Catalina.
 ```
 git@github.com:zlin888/irispl.git
 cd irispl
+cmake .
 make
 ```
 ## Run
