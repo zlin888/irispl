@@ -17,6 +17,7 @@ Yet another lisp-language. Typed-scheme in C++ VM
 ### Prequisities
 * only tested under MacOS and Ubuntu
 * g++ or clang++
+* CMake
 * boost (check https://www.boost.org/)
 ### command
 ```
