@@ -14,16 +14,22 @@ Yet another lisp-language. Typed-scheme in C++ VM
 
 # Usage
 ## Compile
-It, at lease, can be compiled with clang 11.0.0 under the MacOS Catalina.
+### Prequisities
+* only tested under MacOS and Ubuntu
+* g++ or clang++
+* boost (check https://www.boost.org/)
+### command
 ```
-git@github.com:zlin888/irispl.git
+clone it.....
 cd irispl
-cmake .
-make
+mkdir -p build
+cd build
+cmake .. & make
+./iris
 ```
 ## Run
-`./main` is the REPL program. \
-`./main path/to/your/iris.scm/file` will compile your iris code and execute it via the VM.
+`./iris` is the REPL program. \
+`./iris path/to/your/iris.scm/file` will compile your iris code and execute it via the VM.
 
 # User Manual
 
