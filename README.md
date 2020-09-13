@@ -81,6 +81,9 @@ equivalent to:
 ```
 
 
-# Develop Manual
+# Contribution
+If you are interesting in this project, feel free to email me~
+
 ## some bullets 
 * Compile and VM push-store principle: always push inversely and store in order
+
